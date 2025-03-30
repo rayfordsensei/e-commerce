@@ -1,0 +1,161 @@
+[project]
+    dependencies    = [
+    "alembic>=1.15.1",
+    "falcon>=4.0.2",
+    "httpie>=3.2.4",
+    "psycopg2-binary>=2.9.10",
+    "python-decouple>=3.8",
+    "sqlalchemy>=2.0.39",
+    "waitress>=3.0.2",
+]
+    description     = "TODO"
+    name            = "e-commerce"
+    readme          = "README.md"
+    requires-python = ">=3.12.9"
+    version         = "0.1.0"
+
+[tool.black]
+    line-length    = 120
+    preview        = true
+    target-version = ["py312"]
+
+[tool.ruff]
+    exclude = [
+        ".bzr",
+        ".direnv",
+        ".eggs",
+        ".git",
+        ".git-rewrite",
+        ".hg",
+        ".ipynb_checkpoints",
+        ".mypy_cache",
+        ".nox",
+        ".pants.d",
+        ".pyenv",
+        ".pytest_cache",
+        ".pytype",
+        ".ruff_cache",
+        ".svn",
+        ".tox",
+        ".venv",
+        ".vscode",
+        "__pycache__",
+        "__pypackages__",
+        "_build",
+        "buck-out",
+        "build",
+        "dist",
+        "node_modules",
+        "site-packages",
+        "types",
+        "venv",
+    ]
+    line-length = 120
+    preview = true
+    target-version = "py312"
+
+[tool.ruff.lint]
+    select = [
+        "ALL", # include all the rules \_*-*_/
+    ]
+
+    ignore = [
+        "ANN001", # Missing type annotation for function argument
+        "ANN201", # Missing return type annotation for public function
+        "CPY001", # Missing copyright notice at top of file
+        "D100",   # Missing docstring in public module
+        "D101",   # Missing docstring in public class
+        "D102",   # Missing docstring in public method
+        "D103",   # Missing docstring in public function
+        "D104",   # Missing docstring in public package
+        "D105",   # Missing docstring in magic method
+        "D106",   # Missing docstring in public nested class
+        "D107",   # Missing docstring in __init__
+        "EM101",  # Exception must not use a string literal, assign to variable first
+        "ERA001", # Found commented-out code
+        "FIX002", # Line contains TODO, consider resolving the issue
+        "S101",   # Use of assert detected
+        "S311",   # Standard pseudo-random generators are not suitable for cryptographic purposes
+        "T201",   # print found
+        "TD002",  # Missing author in TODO
+        "TD003",  # Missing issue link for this TODO
+        "TRY003", # Avoid specifying long messages outside the exception class
+    ]
+
+    fixable = ["ALL"]
+
+    unfixable = [
+        "F401", # unused import
+        "F841", # unused variable
+    ]
+
+[tool.ruff.lint.flake8-annotations]
+    suppress-none-returning = true
+
+[tool.isort]
+    atomic         = true
+    line-length    = 120
+    profile        = "black"
+    py_version     = 312
+    skip_gitignore = true
+
+[tool.basedpyright]
+    pythonVersion = "3.12"
+    venv          = ".venv"
+    venvPath      = "."
+
+    typeCheckingMode = "recommended"
+
+    reportAny                       = false
+    # reportArgumentType              = false
+    # reportImplicitOverride          = false
+    # reportMissingParameterType      = false
+    # reportMissingTypeArgument       = false
+    # reportUnannotatedClassAttribute = false
+    # reportUnknownArgumentType       = false
+    # reportUnknownMemberType         = false
+    # reportUnknownParameterType      = false
+    # reportUnknownVariableType       = false
+
+    exclude = [
+        "**/__pycache__",
+        "**/node_modules",
+        ".bzr",
+        ".direnv",
+        ".eggs",
+        ".git",
+        ".git-rewrite",
+        ".hg",
+        ".ipynb_checkpoints",
+        ".mypy_cache",
+        ".nox",
+        ".pants.d",
+        ".pyenv",
+        ".pytest_cache",
+        ".pytype",
+        ".ruff_cache",
+        ".svn",
+        ".tox",
+        ".venv",
+        ".vscode",
+        "__pypackages__",
+        "_build",
+        "buck-out",
+        "build",
+        "dist",
+        "node_modules",
+        "site-packages",
+        "src/experimental",
+        "src/typestubs",
+        "types",
+        "venv",
+    ]
+
+[tool.uv.sources]
+falcon = { git = "https://github.com/falconry/falcon" }
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.28.1",
+    "ruff>=0.11.0",
+]
