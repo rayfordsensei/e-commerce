@@ -86,7 +86,7 @@ class LifespanMiddleware:
             logger.exception("Lifespan shutdown failed")
             await send({"type": "lifespan.shutdown.failed", "message": str(e)})
 
-    async def __call__(self, scope: ASGIScope, receive: ASGIReceive, send: ASGISend) -> None:  # TODO: fix complexity?..
+    async def __call__(self, scope: ASGIScope, receive: ASGIReceive, send: ASGISend) -> None:
         # if scope["type"] == "lifespan":
         #     while True:
         #         message = await receive()

@@ -1,14 +1,15 @@
-from typing import final, override
+from typing import Any, final, override
 
 from sqlalchemy import CheckConstraint, Column, DateTime, Float, ForeignKey, Index, Integer, String, func
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import DeclarativeBase, relationship
 
-Base = declarative_base()  # pyright:ignore[reportAny]
+
+class Base(DeclarativeBase):
+    pass
 
 
 @final
-class User(Base):  # pyright:ignore[reportAny]
+class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -18,7 +19,7 @@ class User(Base):  # pyright:ignore[reportAny]
 
     orders = relationship("Order", back_populates="user")
 
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
         Index("ix_users_username", "username"),
         Index("ix_users_email", "email"),
     )
@@ -29,16 +30,16 @@ class User(Base):  # pyright:ignore[reportAny]
 
 
 @final
-class Product(Base):  # pyright:ignore[reportAny]
+class Product(Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     description = Column(String(length=255), nullable=True)
-    price = Column[float](Float, nullable=False)
+    price: Column[float] = Column(Float, nullable=False)
     stock = Column(Integer, nullable=False)
 
-    __table_args__ = (
+    __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
         CheckConstraint("price >= 0", name="check_price_non_negative"),
         CheckConstraint("stock >= 0", name="check_stock_non_negative"),
         Index("ix_products_name", "name"),
@@ -56,17 +57,23 @@ class Product(Base):  # pyright:ignore[reportAny]
 
 
 @final
-class Order(Base):  # pyright:ignore[reportAny]
+class Order(Base):
+    @property
+    def created_at_iso(self) -> str:
+        return self.created_at.isoformat()  # pyright:ignore[reportAny] # Is not None in a typical scenario.
+
     __tablename__: str = "orders"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    total_price = Column[float](Float, nullable=False)
+    total_price: Column[float] = Column(Float, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="orders")
 
-    __table_args__ = (CheckConstraint("total_price >= 0", name="check_total_price_non_negative"),)
+    __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
+        CheckConstraint("total_price >= 0", name="check_total_price_non_negative"),
+    )
 
     @override
     def __repr__(self) -> str:

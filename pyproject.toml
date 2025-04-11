@@ -1,19 +1,19 @@
 [project]
-    dependencies    = [
-    "aiosqlite",
-    "alembic",
-    "databases",
-    "falcon",
-    "httpie",
-    "python-decouple",
-    "sqlalchemy",
-    "uvicorn[standard]",
-]
-    description     = "TODO"
-    name            = "e-commerce"
-    readme          = "README.md"
+    dependencies = [
+        "aiosqlite",
+        "alembic",
+        "databases",
+        "falcon",
+        "httpie",
+        "python-decouple",
+        "sqlalchemy",
+        "uvicorn[standard]",
+    ]
+    description = "TODO"
+    name = "e-commerce"
+    readme = "README.md"
     requires-python = ">=3.12.9"
-    version         = "0.1.0"
+    version = "0.1.0"
 
 [tool.black]
     line-length    = 120
@@ -61,8 +61,6 @@
     ]
 
     ignore = [
-        "ANN001", # Missing type annotation for function argument
-        "ANN201", # Missing return type annotation for public function
         "CPY001", # Missing copyright notice at top of file
         "D100",   # Missing docstring in public module
         "D101",   # Missing docstring in public class
@@ -72,16 +70,13 @@
         "D105",   # Missing docstring in magic method
         "D106",   # Missing docstring in public nested class
         "D107",   # Missing docstring in __init__
-        "EM101",  # Exception must not use a string literal, assign to variable first
         "ERA001", # Found commented-out code
-        "FIX002", # Line contains TODO, consider resolving the issue
+        "INP001", # File is part of an implicit namespace package. Add an __init__.py.
         "S101",   # Use of assert detected
         "S311",   # Standard pseudo-random generators are not suitable for cryptographic purposes
         "T201",   # print found
         "TD002",  # Missing author in TODO
         "TD003",  # Missing issue link for this TODO
-        "TRY003", # Avoid specifying long messages outside the exception class
-        "INP001", # File is part of an implicit namespace package. Add an __init__.py.
     ]
 
     fixable = ["ALL"]
@@ -103,58 +98,20 @@
 
 [tool.basedpyright]
     pythonVersion = "3.12"
-    venv          = ".venv"
-    venvPath      = "."
 
     typeCheckingMode = "recommended"
 
-    # reportAny                       = false
-    # reportArgumentType              = false
-    # reportImplicitOverride          = false
-    # reportMissingParameterType      = false
-    # reportMissingTypeArgument       = false
-    # reportUnannotatedClassAttribute = false
-    # reportUnknownArgumentType       = false
-    # reportUnknownMemberType         = false
-    # reportUnknownParameterType      = false
-    # reportUnknownVariableType       = false
-
     exclude = [
         "**/__pycache__",
-        "**/node_modules",
-        ".bzr",
-        ".direnv",
-        ".eggs",
         ".git",
         ".git-rewrite",
-        ".hg",
-        ".ipynb_checkpoints",
-        ".mypy_cache",
-        ".nox",
-        ".pants.d",
-        ".pyenv",
-        ".pytest_cache",
-        ".pytype",
-        ".ruff_cache",
-        ".svn",
-        ".tox",
         ".venv",
         ".vscode",
         "__pypackages__",
-        "_build",
-        "buck-out",
-        "build",
-        "dist",
-        "node_modules",
-        "site-packages",
-        "src/experimental",
-        "src/typestubs",
+        "migrations",
         "types",
-        "venv",
+        "typings",
     ]
 
 [dependency-groups]
-dev = [
-    "basedpyright",
-    "ruff",
-]
+    dev = ["basedpyright", "ruff"]
