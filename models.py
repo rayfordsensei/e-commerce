@@ -1,37 +1,78 @@
-from datetime import UTC, datetime
+from typing import final, override
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, Column, DateTime, Float, ForeignKey, Index, Integer, String, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-Base = declarative_base()
+Base = declarative_base()  # pyright:ignore[reportAny]
 
 
-class User(Base):
-    __tablename__: str = "users"
+@final
+class User(Base):  # pyright:ignore[reportAny]
+    __tablename__ = "users"
 
-    id: Column[int] = Column[int](Integer, primary_key=True, autoincrement=True)
-    username: Column[str] = Column[str](String(length=50), unique=True, nullable=False)
-    email: Column[str] = Column[str](String(length=100), unique=True, nullable=False)
-    password: Column[str] = Column[str](String(length=255), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(100), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)  # TODO: consider security?
+
+    orders = relationship("Order", back_populates="user")
+
+    __table_args__ = (
+        Index("ix_users_username", "username"),
+        Index("ix_users_email", "email"),
+    )
+
+    @override
+    def __repr__(self) -> str:
+        return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
 
 
-class Product(Base):
-    __tablename__: str = "products"
+@final
+class Product(Base):  # pyright:ignore[reportAny]
+    __tablename__ = "products"
 
-    id: Column[int] = Column[int](Integer, primary_key=True, autoincrement=True)
-    name: Column[str] = Column[str](String(length=100), nullable=False)
-    description: Column[str] = Column[str](String(length=255), nullable=True)
-    price: Column[float] = Column[float](Float, nullable=False)
-    stock: Column[int] = Column[int](Integer, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(length=255), nullable=True)
+    price = Column[float](Float, nullable=False)
+    stock = Column(Integer, nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("price >= 0", name="check_price_non_negative"),
+        CheckConstraint("stock >= 0", name="check_stock_non_negative"),
+        Index("ix_products_name", "name"),
+    )
+
+    @override
+    def __repr__(self) -> str:
+        return (
+            f"<Product(id={self.id}, "
+            f"name='{self.name}', "
+            f"description='{self.description}', "
+            f"price='{self.price}', "
+            f"stock='{self.stock}')>"
+        )
 
 
-class Order(Base):
+@final
+class Order(Base):  # pyright:ignore[reportAny]
     __tablename__: str = "orders"
 
-    id: Column[int] = Column[int](Integer, primary_key=True, autoincrement=True)
-    user_id: Column[int] = Column[int](Integer, ForeignKey(column="users.id"), nullable=False)
-    total_price: Column[float] = Column[float](Float, nullable=False)
-    created_at: Column[datetime] = Column[datetime](DateTime, default=datetime.now(tz=UTC))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    total_price = Column[float](Float, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    user = relationship(argument="User", backref="orders")
+    user = relationship("User", back_populates="orders")
+
+    __table_args__ = (CheckConstraint("total_price >= 0", name="check_total_price_non_negative"),)
+
+    @override
+    def __repr__(self) -> str:
+        return (
+            f"<Order(id={self.id}, "
+            f"User id='{self.user_id}', "
+            f"total='{self.total_price}', "
+            f"created at='{self.created_at}')>"
+        )

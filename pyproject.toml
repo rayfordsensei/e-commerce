@@ -1,12 +1,13 @@
 [project]
     dependencies    = [
-    "alembic>=1.15.1",
-    "falcon>=4.0.2",
-    "httpie>=3.2.4",
-    "psycopg2-binary>=2.9.10",
-    "python-decouple>=3.8",
-    "sqlalchemy>=2.0.39",
-    "waitress>=3.0.2",
+    "aiosqlite",
+    "alembic",
+    "databases",
+    "falcon",
+    "httpie",
+    "python-decouple",
+    "sqlalchemy",
+    "uvicorn[standard]",
 ]
     description     = "TODO"
     name            = "e-commerce"
@@ -80,6 +81,7 @@
         "TD002",  # Missing author in TODO
         "TD003",  # Missing issue link for this TODO
         "TRY003", # Avoid specifying long messages outside the exception class
+        "INP001", # File is part of an implicit namespace package. Add an __init__.py.
     ]
 
     fixable = ["ALL"]
@@ -106,7 +108,7 @@
 
     typeCheckingMode = "recommended"
 
-    reportAny                       = false
+    # reportAny                       = false
     # reportArgumentType              = false
     # reportImplicitOverride          = false
     # reportMissingParameterType      = false
@@ -151,11 +153,8 @@
         "venv",
     ]
 
-[tool.uv.sources]
-falcon = { git = "https://github.com/falconry/falcon" }
-
 [dependency-groups]
 dev = [
-    "basedpyright>=1.28.1",
-    "ruff>=0.11.0",
+    "basedpyright",
+    "ruff",
 ]
