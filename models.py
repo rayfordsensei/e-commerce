@@ -15,7 +15,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False)
     email = Column(String(100), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)  # TODO: consider security?
+    password = Column(String(255), nullable=False)
 
     orders = relationship("Order", back_populates="user")
 

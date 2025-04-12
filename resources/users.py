@@ -1,10 +1,12 @@
 import logging
 from typing import Any, final
 
+import bcrypt
 import falcon
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+import utils
 from db import get_db
 from models import Order, User
 
@@ -29,15 +31,13 @@ class UserResource:
                         }
                         for u in users
                     ]
-                    return
+                    return None
 
                 q = select(User).where(User.id == user_id)
                 result = await session.execute(q)
                 user = result.scalar_one_or_none()
                 if not user:
-                    resp.status = falcon.HTTP_400
-                    resp.media = {"error": f"User with id={user_id} does not exist."}
-                    return
+                    return utils.error_response(resp, falcon.HTTP_400, f"User with id={user_id} does not exist.")
 
                 resp.media = {
                     "id": user.id,
@@ -47,12 +47,10 @@ class UserResource:
 
         except SQLAlchemyError:
             logger.exception("Database error occurred while retrieving users.")
-            resp.status = falcon.HTTP_500
-            resp.media = {"error": "Database error occurred"}
+            utils.error_response(resp, falcon.HTTP_500, "Database error occurred")
         except Exception:
             logger.exception("Unexpected error during user retrieval")
-            resp.status = falcon.HTTP_500
-            resp.media = {"error": "Internal server error"}
+            utils.error_response(resp, falcon.HTTP_500, "Internal server error")
 
     async def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:  # noqa: PLR6301
         """Create a new user."""
@@ -60,16 +58,17 @@ class UserResource:
         required_fields = ["username", "email", "password"]
         missing = [field for field in required_fields if not data.get(field)]
         if missing:
-            resp.status = falcon.HTTP_400
-            resp.media = {"error": f"Missing required fields: {', '.join(missing)}"}
-            return
+            return utils.error_response(resp, falcon.HTTP_400, f"Missing required fields: {', '.join(missing)}")
 
         try:
+            plain = data["password"].encode("utf-8")  # pyright:ignore[reportAny] # TODO: Comes from data being a dict with Any.
+            hashed = bcrypt.hashpw(plain, bcrypt.gensalt())  # pyright:ignore[reportAny] # TODO: Comes from data being a dict with Any.
+
             async with get_db() as session:
                 new_user = User(
                     username=data["username"],
                     email=data["email"],
-                    password=data["password"],
+                    password=hashed.decode("utf-8"),
                 )
                 session.add(new_user)
 
@@ -83,16 +82,13 @@ class UserResource:
 
         except IntegrityError:
             logger.exception("IntegrityError while creating order.")
-            resp.status = falcon.HTTP_409
-            resp.media = {"error": "User with this username or email already exists."}
+            utils.error_response(resp, falcon.HTTP_409, "User with this username or email already exists.")
         except SQLAlchemyError:
             logger.exception("Database error during user creation.")
-            resp.status = falcon.HTTP_500
-            resp.media = {"error": "Database error occurred"}
+            utils.error_response(resp, falcon.HTTP_500, "Database error occurred")
         except Exception:
             logger.exception("Unexpected error during user creation.")
-            resp.status = falcon.HTTP_500
-            resp.media = {"error": "Internal server error"}
+            utils.error_response(resp, falcon.HTTP_500, "Internal server error")
 
     async def on_delete(self, req: falcon.Request, resp: falcon.Response, user_id: int) -> None:  # pyright:ignore[reportUnusedParameter]  # noqa: ARG002, PLR6301
         """Delete an existing user by ID."""
@@ -103,9 +99,7 @@ class UserResource:
                 user = result.scalar_one_or_none()
 
                 if not user:
-                    resp.status = falcon.HTTP_404
-                    resp.media = {"error": f"User with id={user_id} not found."}
-                    return
+                    return utils.error_response(resp, falcon.HTTP_404, f"User with id={user_id} not found.")
 
                 # Check whether the user has any order records.
                 order_q = select(Order).where(Order.user_id == user_id)
@@ -113,9 +107,7 @@ class UserResource:
                 existing = order_result.scalars().first()
 
                 if existing:
-                    resp.status = falcon.HTTP_409
-                    resp.media = {"error": "Cannot delete user because orders still exist."}
-                    return
+                    return utils.error_response(resp, falcon.HTTP_409, "Cannot delete user because orders still exist.")
 
                 await session.delete(user)
                 await session.commit()
@@ -123,9 +115,7 @@ class UserResource:
 
         except SQLAlchemyError:
             logger.exception("Database error during user deletion.")
-            resp.status = falcon.HTTP_500
-            resp.media = {"error": "Database error occurred during deletion"}
+            utils.error_response(resp, falcon.HTTP_500, "Database error occurred during deletion")
         except Exception:
             logger.exception("Unexpected error during user deletion.")
-            resp.status = falcon.HTTP_500
-            resp.media = {"error": "Internal server error"}
+            utils.error_response(resp, falcon.HTTP_500, "Internal server error")

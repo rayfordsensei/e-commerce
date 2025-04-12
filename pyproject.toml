@@ -2,13 +2,14 @@
     dependencies = [
         "aiosqlite",
         "alembic",
+        "bcrypt>=4.3.0",
         "databases",
         "falcon",
         "httpie",
         "python-decouple",
         "sqlalchemy",
         "uvicorn[standard]",
-    ]
+]
     description = "TODO"
     name = "e-commerce"
     readme = "README.md"
