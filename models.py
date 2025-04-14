@@ -1,7 +1,8 @@
+import datetime
 from typing import Any, final, override
 
-from sqlalchemy import CheckConstraint, Column, DateTime, Float, ForeignKey, Index, Integer, String, func
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, Index, Integer, String, func
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -12,12 +13,12 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String(50), unique=True, nullable=False)
-    email = Column(String(100), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    orders = relationship("Order", back_populates="user")
+    orders: Mapped[list["Order"]] = relationship("Order", back_populates="user")
 
     __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
         Index("ix_users_username", "username"),
@@ -33,11 +34,11 @@ class User(Base):
 class Product(Base):
     __tablename__ = "products"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False)
-    description = Column(String(length=255), nullable=True)
-    price: Column[float] = Column(Float, nullable=False)
-    stock = Column(Integer, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str] = mapped_column(String(length=255), nullable=True)
+    price: Mapped[float] = mapped_column(Float, nullable=False)
+    stock: Mapped[int] = mapped_column(Integer, nullable=False)
 
     __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
         CheckConstraint("price >= 0", name="check_price_non_negative"),
@@ -60,16 +61,16 @@ class Product(Base):
 class Order(Base):
     @property
     def created_at_iso(self) -> str:
-        return self.created_at.isoformat()  # pyright:ignore[reportAny] # Is not None in a typical scenario.
+        return self.created_at.isoformat()
 
     __tablename__: str = "orders"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    total_price: Column[float] = Column(Float, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    total_price: Mapped[float] = mapped_column(Float, nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    user = relationship("User", back_populates="orders")
+    user: Mapped["User"] = relationship("User", back_populates="orders")
 
     __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
         CheckConstraint("total_price >= 0", name="check_total_price_non_negative"),

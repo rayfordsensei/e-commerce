@@ -13,9 +13,11 @@ logger = logging.getLogger(__name__)
 
 @final
 class OrderResource:
-    async def on_get(self, req: falcon.Request, resp: falcon.Response, order_id: int | None = None) -> None:  # pyright:ignore[reportUnusedParameter]  # noqa: ARG002, PLR6301
+    async def on_get(self, req: falcon.Request, resp: falcon.Response, order_id: int | None = None) -> None:  # noqa: PLR6301
         """Retrieve all orders or a single order by ID."""
-        try:  # TODO: pagination + filtering
+        _ = req
+
+        try:
             async with get_db() as session:
                 if order_id is None:
                     q = select(Order)
@@ -59,7 +61,7 @@ class OrderResource:
 
     async def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:  # noqa: PLR6301
         """Create a new order."""
-        data: dict[str, Any] = await req.get_media()  # pyright:ignore[reportExplicitAny, reportAny] # TODO: non-ideal
+        data: dict[str, Any] = await req.get_media()  # pyright:ignore[reportExplicitAny, reportAny]
         required_fields = ["user_id", "total_price"]
         missing = [field for field in required_fields if not data.get(field)]
         if missing:
@@ -67,12 +69,12 @@ class OrderResource:
             resp.media = {"error": f"Missing required fields: {', '.join(missing)}"}
             return
 
-        user_id = data["user_id"]  # pyright:ignore[reportAny] # TODO: Comes from data being a dict with Any.
-        total_price = data["total_price"]  # pyright:ignore[reportAny] # TODO: Comes from data being a dict with Any.
+        user_id = data["user_id"]  # pyright:ignore[reportAny]
+        total_price = data["total_price"]  # pyright:ignore[reportAny]
 
         try:
             async with get_db() as session:
-                user_q = select(User).where(User.id == user_id)  # pyright:ignore[reportAny] # TODO: Comes from data being a dict with Any.
+                user_q = select(User).where(User.id == user_id)  # pyright:ignore[reportAny]
                 user_result = await session.execute(user_q)
                 user = user_result.scalar_one_or_none()
                 if not user:
@@ -108,8 +110,10 @@ class OrderResource:
             resp.status = falcon.HTTP_500
             resp.media = {"error": "Internal server error"}
 
-    async def on_delete(self, req: falcon.Request, resp: falcon.Response, order_id: int) -> None:  # pyright:ignore[reportUnusedParameter]  # noqa: ARG002, PLR6301
+    async def on_delete(self, req: falcon.Request, resp: falcon.Response, order_id: int) -> None:  # noqa: PLR6301
         """Delete an existing order by ID."""
+        _ = req
+
         try:
             async with get_db() as session:
                 q = select(Order).where(Order.id == order_id)

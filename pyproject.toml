@@ -6,7 +6,8 @@
         "databases",
         "falcon",
         "httpie",
-        "python-decouple",
+        "joserfc>=1.0.4",
+        "pydantic-settings>=2.8.1",
         "sqlalchemy",
         "uvicorn[standard]",
 ]

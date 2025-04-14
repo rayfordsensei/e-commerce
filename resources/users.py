@@ -15,9 +15,11 @@ logger = logging.getLogger(__name__)
 
 @final
 class UserResource:
-    async def on_get(self, req: falcon.Request, resp: falcon.Response, user_id: int | None = None) -> None:  # pyright:ignore[reportUnusedParameter]  # noqa: ARG002, PLR6301
+    async def on_get(self, req: falcon.Request, resp: falcon.Response, user_id: int | None = None) -> None:  # noqa: PLR6301
         """Retrieve all users or a single user by ID."""
-        try:  # TODO: pagination + filtering
+        _ = req
+
+        try:
             async with get_db() as session:
                 if user_id is None:
                     q = select(User)
@@ -54,15 +56,15 @@ class UserResource:
 
     async def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:  # noqa: PLR6301
         """Create a new user."""
-        data: dict[str, Any] = await req.get_media()  # pyright:ignore[reportExplicitAny, reportAny] # non-ideal
+        data: dict[str, Any] = await req.get_media()  # pyright:ignore[reportExplicitAny, reportAny]
         required_fields = ["username", "email", "password"]
         missing = [field for field in required_fields if not data.get(field)]
         if missing:
             return utils.error_response(resp, falcon.HTTP_400, f"Missing required fields: {', '.join(missing)}")
 
         try:
-            plain = data["password"].encode("utf-8")  # pyright:ignore[reportAny] # TODO: Comes from data being a dict with Any.
-            hashed = bcrypt.hashpw(plain, bcrypt.gensalt())  # pyright:ignore[reportAny] # TODO: Comes from data being a dict with Any.
+            plain = data["password"].encode("utf-8")  # pyright:ignore[reportAny]
+            hashed = bcrypt.hashpw(plain, bcrypt.gensalt())  # pyright:ignore[reportAny]
 
             async with get_db() as session:
                 new_user = User(
@@ -90,8 +92,10 @@ class UserResource:
             logger.exception("Unexpected error during user creation.")
             utils.error_response(resp, falcon.HTTP_500, "Internal server error")
 
-    async def on_delete(self, req: falcon.Request, resp: falcon.Response, user_id: int) -> None:  # pyright:ignore[reportUnusedParameter]  # noqa: ARG002, PLR6301
+    async def on_delete(self, req: falcon.Request, resp: falcon.Response, user_id: int) -> None:  # noqa: PLR6301
         """Delete an existing user by ID."""
+        _ = req
+
         try:
             async with get_db() as session:
                 q = select(User).where(User.id == user_id)

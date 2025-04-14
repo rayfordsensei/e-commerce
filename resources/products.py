@@ -13,9 +13,11 @@ logger = logging.getLogger(__name__)
 
 @final
 class ProductResource:
-    async def on_get(self, req: falcon.Request, resp: falcon.Response, product_id: int | None = None) -> None:  # pyright:ignore[reportUnusedParameter]  # noqa: ARG002, PLR6301
+    async def on_get(self, req: falcon.Request, resp: falcon.Response, product_id: int | None = None) -> None:  # noqa: PLR6301
         """Retrieve all products or a single product by ID."""
-        try:  # TODO: pagination + filtering
+        _ = req
+
+        try:
             async with get_db() as session:
                 if product_id is None:
                     q = select(Product)
@@ -61,7 +63,7 @@ class ProductResource:
 
     async def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:  # noqa: PLR6301
         """Create a new product."""
-        data: dict[str, Any] = await req.get_media()  # pyright:ignore[reportExplicitAny, reportAny] # TODO: non-ideal
+        data: dict[str, Any] = await req.get_media()  # pyright:ignore[reportExplicitAny, reportAny]
         required_fields = ["name", "price", "stock"]
         missing = [field for field in required_fields if not data.get(field)]
         if missing:
@@ -69,10 +71,10 @@ class ProductResource:
             resp.media = {"error": f"Missing required fields: {', '.join(missing)}"}
             return
 
-        name = data["name"]  # pyright:ignore[reportAny] # TODO: Comes from data being a dict with Any.
+        name = data["name"]  # pyright:ignore[reportAny]
         description = data.get("description") or ""
-        price = data["price"]  # pyright:ignore[reportAny] # TODO: Comes from data being a dict with Any.
-        stock = data["stock"]  # pyright:ignore[reportAny] # TODO: Comes from data being a dict with Any.
+        price = data["price"]  # pyright:ignore[reportAny]
+        stock = data["stock"]  # pyright:ignore[reportAny]
 
         try:
             async with get_db() as session:
@@ -107,8 +109,10 @@ class ProductResource:
             resp.status = falcon.HTTP_500
             resp.media = {"error": "Internal server error"}
 
-    async def on_delete(self, req: falcon.Request, resp: falcon.Response, product_id: int) -> None:  # pyright:ignore[reportUnusedParameter]  # noqa: ARG002, PLR6301
+    async def on_delete(self, req: falcon.Request, resp: falcon.Response, product_id: int) -> None:  # noqa: PLR6301
         """Delete an existing product by ID."""
+        _ = req
+
         try:
             async with get_db() as session:
                 q = select(Product).where(Product.id == product_id)

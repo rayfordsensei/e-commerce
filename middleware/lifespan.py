@@ -87,40 +87,6 @@ class LifespanMiddleware:
             await send({"type": "lifespan.shutdown.failed", "message": str(e)})
 
     async def __call__(self, scope: ASGIScope, receive: ASGIReceive, send: ASGISend) -> None:
-        # if scope["type"] == "lifespan":
-        #     while True:
-        #         message = await receive()
-        #         if message["type"] == "lifespan.startup":
-        #             try:
-        #                 async with self._lock:
-        #                     if not self.started and self.startup_task:
-        #                         await self.startup_task()
-        #                 await send({"type": "lifespan.startup.complete"})
-        #             except Exception as e:
-        #                 logger.exception("Startup failed")
-        #                 await send({"type": "lifespan.startup.failed", "message": str(e)})
-        #         elif message["type"] == "lifespan.shutdown":
-        #             try:
-        #                 if self.shutdown_task:
-        #                     await self.shutdown_task()
-        #                 logger.info("Lifespan shutdown complete")
-        #                 await send({"type": "lifespan.shutdown.complete"})
-        #             except Exception as e:
-        #                 logger.exception("Lifespan shutdown failed")
-        #                 await send({"type": "lifespan.shutdown.failed", "message": str(e)})
-        #             return
-        # else:
-        #     # For HTTP or non-lifespan scopes make sure that the startup task is executed.
-        #     if not self.started and self.startup_task:
-        #         async with self._lock:
-        #             if not self.started:
-        #                 try:
-        #                     await self.startup_task()
-        #                 except Exception:
-        #                     logger.exception("Startup task failed during HTTP init")
-        #                     raise
-        #                 self.started = True
-        #     await self.app(scope, receive, send)
         if scope["type"] != "lifespan":
             # For HTTP and other non-lifespan scopes make sure the app is started.
             await self._ensure_started()

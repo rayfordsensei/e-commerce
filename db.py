@@ -1,13 +1,14 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from decouple import config
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from config import settings
 
 # from models import Base # Might need this for referencing (or not).
 
-SQLITE_URI = "sqlite+aiosqlite:///ecommerce.db"
-DEBUG = config("DEBUG", default=False, cast=bool)  # pyright:ignore[reportAny]
+DEBUG = settings.DEBUG
+SQLITE_URI = settings.SQLITE_URI
 
 engine = create_async_engine(SQLITE_URI, echo=DEBUG)
 AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
