@@ -1,12 +1,26 @@
+from typing import final
+
 import falcon
 from joserfc.errors import ExpiredTokenError, JoseError
 
 from auth import verify_jwt
 
 
+@final
 class JWTMiddleware:
-    async def process_request(self, req: falcon.Request, resp: falcon.Response):  # noqa: PLR6301
+    def __init__(self):
+        self.unprotected = [
+            ("/login", "POST"),
+        ]
+
+    async def process_request(self, req: falcon.Request, resp: falcon.Response):
         _ = resp
+
+        route = req.path
+        method = req.method.upper()
+
+        if (route, method) in self.unprotected:
+            return
 
         auth_header = req.get_header("Authorization")
 
@@ -18,6 +32,7 @@ class JWTMiddleware:
         try:
             claims = verify_jwt(token)
             req.context.user_id = int(claims["sub"])  # pyright:ignore[reportAny]
+
         except ExpiredTokenError:
             raise falcon.HTTPUnauthorized(description="Token has expired.") from ExpiredTokenError
         except JoseError:

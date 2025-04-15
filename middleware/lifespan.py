@@ -71,6 +71,7 @@ class LifespanMiddleware:
         try:
             await self._ensure_started()
             await send({"type": "lifespan.startup.complete"})
+
         except Exception as e:
             logger.exception("Startup failed")
             await send({"type": "lifespan.startup.failed", "message": str(e)})
@@ -82,6 +83,7 @@ class LifespanMiddleware:
                 await self.shutdown_task()
             logger.info("Lifespan shutdown complete")
             await send({"type": "lifespan.shutdown.complete"})
+
         except Exception as e:
             logger.exception("Lifespan shutdown failed")
             await send({"type": "lifespan.shutdown.failed", "message": str(e)})

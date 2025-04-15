@@ -1,11 +1,13 @@
 import logging
 import time
+from typing import final
 
 from falcon import Request, Response
 
 logger = logging.getLogger(__name__)
 
 
+@final
 class RequestLoggerMiddleware:
     """Middleware to log the method, path, and other relevant data for each request.
 

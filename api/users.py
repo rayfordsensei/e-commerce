@@ -3,12 +3,14 @@ from typing import Any, final
 
 import bcrypt
 import falcon
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 import utils
 from db import get_db
 from models import Order, User
+from schemas.user_schemas import UserCreate, UserOut
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +27,13 @@ class UserResource:
                     q = select(User)
                     result = await session.execute(q)
                     users = result.scalars().all()
+
                     resp.media = [
-                        {
-                            "id": u.id,
-                            "username": u.username,
-                            "email": u.email,
-                        }
+                        UserOut(
+                            id=u.id,
+                            username=u.username,
+                            email=u.email,
+                        ).model_dump()
                         for u in users
                     ]
                     return None
@@ -38,14 +41,15 @@ class UserResource:
                 q = select(User).where(User.id == user_id)
                 result = await session.execute(q)
                 user = result.scalar_one_or_none()
+
                 if not user:
                     return utils.error_response(resp, falcon.HTTP_400, f"User with id={user_id} does not exist.")
 
-                resp.media = {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                }
+                resp.media = UserOut(
+                    id=user.id,
+                    username=user.username,
+                    email=user.email,
+                ).model_dump()
 
         except SQLAlchemyError:
             logger.exception("Database error occurred while retrieving users.")
@@ -56,31 +60,35 @@ class UserResource:
 
     async def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:  # noqa: PLR6301
         """Create a new user."""
-        data: dict[str, Any] = await req.get_media()  # pyright:ignore[reportExplicitAny, reportAny]
-        required_fields = ["username", "email", "password"]
-        missing = [field for field in required_fields if not data.get(field)]
-        if missing:
-            return utils.error_response(resp, falcon.HTTP_400, f"Missing required fields: {', '.join(missing)}")
+        try:
+            data: dict[str, Any] = await req.get_media()  # pyright:ignore[reportAny, reportExplicitAny]
+            user_in = UserCreate(**data)  # pyright:ignore[reportAny]
+
+        except ValidationError as e:
+            logger.exception("Validation error while creating user.")
+            msg = "; ".join(f"{' -> '.join(map(str, error['loc']))}: {error['msg']}" for error in e.errors())
+
+            return utils.error_response(resp, falcon.HTTP_400, msg)
+
+        plain = user_in.password.encode("utf-8")
+        hashed = bcrypt.hashpw(plain, bcrypt.gensalt())
 
         try:
-            plain = data["password"].encode("utf-8")  # pyright:ignore[reportAny]
-            hashed = bcrypt.hashpw(plain, bcrypt.gensalt())  # pyright:ignore[reportAny]
-
             async with get_db() as session:
                 new_user = User(
-                    username=data["username"],
-                    email=data["email"],
+                    username=user_in.username,
+                    email=user_in.email,
                     password=hashed.decode("utf-8"),
                 )
                 session.add(new_user)
-
                 await session.commit()
+
                 resp.status = falcon.HTTP_201
-                resp.media = {
-                    "id": new_user.id,
-                    "username": new_user.username,
-                    "email": new_user.email,
-                }
+                resp.media = UserOut(
+                    id=new_user.id,
+                    username=new_user.username,
+                    email=new_user.email,
+                ).model_dump()
 
         except IntegrityError:
             logger.exception("IntegrityError while creating order.")
@@ -106,8 +114,8 @@ class UserResource:
                     return utils.error_response(resp, falcon.HTTP_404, f"User with id={user_id} not found.")
 
                 # Check whether the user has any order records.
-                order_q = select(Order).where(Order.user_id == user_id)
-                order_result = await session.execute(order_q)
+                q = select(Order).where(Order.user_id == user_id)
+                order_result = await session.execute(q)
                 existing = order_result.scalars().first()
 
                 if existing:
