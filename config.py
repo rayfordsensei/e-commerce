@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     DEBUG: bool
     SECRET_KEY: str
     SQLITE_URI: str
+    ALEMBIC_URI: str
 
     class Config:
         env_file: str = ".env"

@@ -11,7 +11,7 @@ from db import get_db
 from models import Order, User
 from schemas.order_schemas import OrderCreate, OrderOut
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app." + __name__)
 
 
 @final

@@ -3,7 +3,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any, Literal, TypedDict, final
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app." + __name__)
 
 
 # ASGI lifespan message types

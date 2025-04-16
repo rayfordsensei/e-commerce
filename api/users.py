@@ -12,7 +12,7 @@ from db import get_db
 from models import Order, User
 from schemas.user_schemas import UserCreate, UserOut
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app." + __name__)
 
 
 @final

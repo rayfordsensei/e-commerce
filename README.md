@@ -52,7 +52,7 @@ A lightweight, RESTful e-commerce backend API built with:
 
 - Send a POST request to `/login` with JSON `{"username": "...", "password": "..."}`.
 - On success, the server returns a JWT token (by default valid for 4 hours).
-- Currently there are no available protected endpoints, so authentication is unnecessary.
+- Currently all endpoints require a token to access them.
 
 ## Additional Notes
 

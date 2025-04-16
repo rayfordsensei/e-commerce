@@ -11,7 +11,7 @@ from db import get_db
 from models import Product
 from schemas.product_schemas import ProductCreate, ProductOut
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app." + __name__)
 
 
 @final
