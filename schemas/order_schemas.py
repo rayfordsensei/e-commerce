@@ -10,4 +10,4 @@ class OrderOut(BaseModel):
     id: int
     user_id: int
     total_price: float
-    created_at: str  # isoformatted
+    created_at: str  # isoformat?..

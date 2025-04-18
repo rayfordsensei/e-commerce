@@ -81,6 +81,7 @@ class LifespanMiddleware:
         try:
             if self.shutdown_task:
                 await self.shutdown_task()
+
             logger.info("Lifespan shutdown complete")
             await send({"type": "lifespan.shutdown.complete"})
 
@@ -98,8 +99,10 @@ class LifespanMiddleware:
         while True:
             message = await receive()
             message_type = message.get("type")
+
             if message_type == "lifespan.startup":
                 await self._handle_startup(send)
+
             elif message_type == "lifespan.shutdown":
                 await self._handle_shutdown(send)
                 return

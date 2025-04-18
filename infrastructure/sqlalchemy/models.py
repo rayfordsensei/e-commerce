@@ -10,6 +10,35 @@ class Base(DeclarativeBase):
 
 
 @final
+class Order(Base):
+    @property
+    def created_at_iso(self) -> str:
+        return self.created_at.isoformat()
+
+    __tablename__: str = "orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    total_price: Mapped[float] = mapped_column(Float, nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user: Mapped["User"] = relationship("User", back_populates="orders")
+
+    __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
+        CheckConstraint("total_price >= 0", name="check_total_price_non_negative"),
+    )
+
+    @override
+    def __repr__(self) -> str:
+        return (
+            f"<Order(id={self.id}, "
+            f"User id='{self.user_id}', "
+            f"total='{self.total_price}', "
+            f"created at='{self.created_at}')>"
+        )
+
+
+@final
 class User(Base):
     __tablename__ = "users"
 
@@ -54,33 +83,4 @@ class Product(Base):
             f"description='{self.description}', "
             f"price='{self.price}', "
             f"stock='{self.stock}')>"
-        )
-
-
-@final
-class Order(Base):
-    @property
-    def created_at_iso(self) -> str:
-        return self.created_at.isoformat()
-
-    __tablename__: str = "orders"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
-    total_price: Mapped[float] = mapped_column(Float, nullable=False)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-    user: Mapped["User"] = relationship("User", back_populates="orders")
-
-    __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
-        CheckConstraint("total_price >= 0", name="check_total_price_non_negative"),
-    )
-
-    @override
-    def __repr__(self) -> str:
-        return (
-            f"<Order(id={self.id}, "
-            f"User id='{self.user_id}', "
-            f"total='{self.total_price}', "
-            f"created at='{self.created_at}')>"
         )

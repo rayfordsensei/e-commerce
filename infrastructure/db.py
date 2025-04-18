@@ -5,8 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from config import settings
 
-# from models import Base # Might need this for referencing (or not).
-
 DEBUG = settings.DEBUG
 SQLITE_URI = settings.SQLITE_URI
 
@@ -21,7 +19,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:  # noqa: RUF029
-    # Just a placeholder now, might add some test queries.
+    # TODO: make it... useful?
     print("[init_db] Relying on Alembic migrations to create/update tables.")
 
 

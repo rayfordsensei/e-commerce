@@ -4,9 +4,11 @@ import bcrypt
 import falcon
 
 
-def error_response(resp: falcon.Response, status_code: str, message: str):
+def error_response(resp: falcon.Response, status_code: str, message: str, request_id: str | None = None):
     resp.status = status_code
     resp.media = {"error": message}
+    if request_id:
+        resp.media["request_id"] = request_id
 
 
 def get_missing_fields(data: dict[str, Any], required_fields: list[str]) -> list[str]:  # pyright:ignore[reportExplicitAny]
