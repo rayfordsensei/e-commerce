@@ -3,8 +3,8 @@ from typing import final
 import falcon
 from falcon import Request, Response
 
-from application.use_cases.users import DeleteUser, GetUser, ListUsers, RegisterUser
-from schemas.user_schemas import UserCreate, UserOut
+from api.schemas.user_schemas import UserCreate, UserOut
+from services.use_cases.users import DeleteUser, GetUser, ListUsers, RegisterUser
 
 
 @final

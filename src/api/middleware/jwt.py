@@ -3,7 +3,7 @@ from typing import final
 import falcon
 from joserfc.errors import ExpiredTokenError, JoseError
 
-from domain.auth import AbstractTokenVerifier
+from domain.auth.auth import AbstractTokenVerifier
 
 
 @final

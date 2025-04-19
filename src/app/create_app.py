@@ -2,31 +2,25 @@ from typing import TypedDict
 
 from falcon.asgi import App
 
-from application.use_cases.auth import AuthenticateUser
-from application.use_cases.orders import CreateOrder, DeleteOrder, GetOrder, ListOrders, UpdateOrderFields
-from application.use_cases.products import (
-    CreateProduct,
-    DeleteProduct,
-    GetProduct,
-    ListProducts,
-    UpdateProductFields,
-)
-from application.use_cases.users import DeleteUser, GetUser, ListUsers, RegisterUser
-from infrastructure.db import close_db, init_db
-from infrastructure.jsonjwt import JsonWebTokenService
+from api.middleware.jwt import JWTMiddleware
+from api.middleware.lifespan import LifespanMiddleware
+from api.middleware.request_logger import RequestLoggerMiddleware
+from api.routes.login_resource import LoginResource
+from api.routes.order_resource import OrderResource
+from api.routes.product_resource import ProductResource
+from api.routes.user_resource import UserResource
+from app.logging_conf import setup_logging
+from infrastructure.databases.db import close_db, init_db
+from infrastructure.jwt.service import JsonWebTokenService
 from infrastructure.sqlalchemy.repositories import (
     SQLAlchemyOrderRepository,
     SQLAlchemyProductRepository,
     SQLAlchemyUserRepository,
 )
-from interfaces.http.jwt_middleware import JWTMiddleware
-from interfaces.http.lifespan import LifespanMiddleware
-from interfaces.http.login_resource import LoginResource
-from interfaces.http.order_resource import OrderResource
-from interfaces.http.product_resource import ProductResource
-from interfaces.http.request_logger_middleware import RequestLoggerMiddleware
-from interfaces.http.user_resource import UserResource
-from logging_conf import setup_logging
+from services.use_cases.auth import AuthenticateUser
+from services.use_cases.orders import CreateOrder, DeleteOrder, GetOrder, ListOrders, UpdateOrderFields
+from services.use_cases.products import CreateProduct, DeleteProduct, GetProduct, ListProducts, UpdateProductFields
+from services.use_cases.users import DeleteUser, GetUser, ListUsers, RegisterUser
 
 
 class Repositories(TypedDict):
@@ -81,7 +75,7 @@ def create_services() -> Services:
 def create_use_cases(repos: Repositories, services: Services) -> UseCases:
     return {
         "auth": AuthenticateUser(repos["users"], services["jwt"]),
-        "create_order": CreateOrder(repos["orders"], repos["users"]),
+        "create_order": CreateOrder(repos["users"], repos["orders"]),
         "list_orders": ListOrders(repos["orders"]),
         "get_order": GetOrder(repos["orders"]),
         "delete_order": DeleteOrder(repos["orders"]),
@@ -124,7 +118,14 @@ def create_resources(uc: UseCases) -> Resources:
     }
 
 
-def create_falcon_app(resources: Resources, services: Services) -> App:
+def create_app() -> LifespanMiddleware:
+    setup_logging("INFO")
+
+    repos = create_repositories()
+    services = create_services()
+    use_cases = create_use_cases(repos, services)
+    resources = create_resources(use_cases)
+
     app = App(
         middleware=[
             RequestLoggerMiddleware(),
@@ -140,56 +141,4 @@ def create_falcon_app(resources: Resources, services: Services) -> App:
     app.add_route("/users", resources["users"])
     app.add_route("/users/{user_id:int}", resources["users"])
 
-    return app
-
-
-def build_app() -> LifespanMiddleware:
-    setup_logging("INFO")
-
-    repos = create_repositories()
-    services = create_services()
-    use_cases = create_use_cases(repos, services)
-    resources = create_resources(use_cases)
-    falcon_app = create_falcon_app(resources, services)
-
-    return LifespanMiddleware(falcon_app, startup_task=init_db, shutdown_task=close_db)
-
-
-app = build_app()
-
-# TODO: context_types?
-# TODO: pytest?
-# TODO: pagination + filtering
-# TODO: SimpleNamespace for req (esp. in request_logger)?
-# TODO: Swagger/ReDoc? (falcon-apispec, falcon-oas)
-# TODO: background tasks?
-# TODO: rate-limiting + abuse protection?
-# TODO: check whether joserfc is validating "exp"/claims
-# TODO: implement different logging conf for dev/prod (structlog?)
-# TODO: log request body for safe endpoints (logger.debug?)
-# TODO: differ between log levels (only "INFO" for now)
-# TODO: Make consistent hints for API endpoints in interfaces/http/, like:
-# ───────────────────────────
-# POST /products
-# ───────────────────────────
-# TODO: Check and fix "noqa" and "pyright:ignore"
-# TODO: custom exceptions instead of generic ones (ValueError("...")) inside domain/exceptions.py
-# TODO: shopping cart?..
-# TODO: generic error handler like this:
-# def generic_error_handler(ex, req, resp, params):
-#     request_id = getattr(req.context, "request_id", None)
-#     resp.set_header("X-Request-ID", request_id)
-#     # Optionally log or attach `request_id` in the response body
-# app = falcon.App(middleware=[...])
-# app.add_error_handler(Exception, generic_error_handler)
-# TODO: replace resp.status + resp.media errors with error_response(resp, falcon.ErrorCode, "desc", req.context.request_id)
-# TODO: replace logging per loguru (shared/logging.py)
-# from loguru import logger
-
-# logger.info("Server started")
-# logger.warning("User {user_id} not found", user_id=user.id)
-# logger.debug("Request body: {}", body)
-# logger.error("Oops", exc_info=True)
-
-# import logging
-# logger = logging.getLogger(...)  # is not needed anymore
+    return LifespanMiddleware(app, init_db, close_db)

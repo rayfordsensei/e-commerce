@@ -2,8 +2,8 @@ from typing import final
 
 import falcon
 
-from application.use_cases.auth import AuthenticateUser
-from schemas.login_schemas import LoginIn, TokenOut
+from api.schemas.login_schemas import LoginIn, TokenOut
+from services.use_cases.auth import AuthenticateUser
 
 
 @final

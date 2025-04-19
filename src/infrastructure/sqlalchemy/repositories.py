@@ -2,9 +2,13 @@ from collections.abc import Sequence
 
 from sqlalchemy import delete, select, update
 
-from domain.entities import Order, Product, User
-from domain.repositories import AbstractOrderRepository, AbstractProductRepository, AbstractUserRepository
-from infrastructure.db import get_db
+from domain.orders.entities import Order
+from domain.orders.repositories import AbstractOrderRepository
+from domain.products.entities import Product
+from domain.products.repositories import AbstractProductRepository
+from domain.users.entities import User
+from domain.users.repositories import AbstractUserRepository
+from infrastructure.databases.db import get_db
 from infrastructure.sqlalchemy.models import Order as OrderORM
 from infrastructure.sqlalchemy.models import Product as ProductORM
 from infrastructure.sqlalchemy.models import User as UserORM

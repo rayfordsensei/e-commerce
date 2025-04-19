@@ -3,14 +3,14 @@ from typing import final
 import falcon
 from falcon import Request, Response
 
-from application.use_cases.orders import (
+from api.schemas.order_schemas import OrderCreate, OrderOut
+from services.use_cases.orders import (
     CreateOrder,
     DeleteOrder,
     GetOrder,
     ListOrders,
     UpdateOrderFields,
 )
-from schemas.order_schemas import OrderCreate, OrderOut
 
 
 @final

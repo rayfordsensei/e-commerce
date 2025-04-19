@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from config import settings
+from app.settings import settings
 
 DEBUG = settings.DEBUG
 SQLITE_URI = settings.SQLITE_URI

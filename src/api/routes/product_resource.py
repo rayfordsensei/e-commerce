@@ -3,8 +3,8 @@ from typing import final
 import falcon
 from falcon import Request, Response
 
-from application.use_cases.products import CreateProduct, DeleteProduct, GetProduct, ListProducts, UpdateProductFields
-from schemas.product_schemas import ProductCreate, ProductOut
+from api.schemas.product_schemas import ProductCreate, ProductOut
+from services.use_cases.products import CreateProduct, DeleteProduct, GetProduct, ListProducts, UpdateProductFields
 
 
 @final
