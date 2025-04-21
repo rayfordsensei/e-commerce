@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import override
 
 from sqlalchemy import delete, select, update
 
@@ -36,6 +37,7 @@ class SQLAlchemyOrderRepository(AbstractOrderRepository):
     """Infrastructure adapter that fulfils the domain contract."""
 
     #  Write ops
+    @override
     async def add(self, order: Order) -> Order:
         async with get_db() as session:
             orm = OrderORM(
@@ -48,30 +50,35 @@ class SQLAlchemyOrderRepository(AbstractOrderRepository):
             await session.refresh(orm)  # get generated id
             return _order_to_domain(orm)
 
+    @override
     async def delete(self, order_id: int) -> None:
         async with get_db() as session:
-            await session.execute(delete(OrderORM).where(OrderORM.id == order_id))
+            _ = await session.execute(delete(OrderORM).where(OrderORM.id == order_id))
             await session.commit()
 
+    @override
     async def update_total(self, order_id: int, new_total: float) -> None:
         async with get_db() as session:
-            await session.execute(
+            _ = await session.execute(
                 update(OrderORM).where(OrderORM.id == order_id).values(total_price=new_total),
             )
             await session.commit()
 
     # Read ops
+    @override
     async def get(self, order_id: int) -> Order | None:
         async with get_db() as session:
             res = await session.execute(select(OrderORM).where(OrderORM.id == order_id))
             row = res.scalar_one_or_none()
             return _order_to_domain(row) if row else None
 
+    @override
     async def list_for_user(self, user_id: int) -> Sequence[Order]:
         async with get_db() as session:
             res = await session.execute(select(OrderORM).where(OrderORM.user_id == user_id))
             return [_order_to_domain(r) for r in res.scalars().all()]
 
+    @override
     async def list_all(self) -> Sequence[Order]:
         async with get_db() as session:
             res = await session.execute(select(OrderORM))
@@ -80,6 +87,7 @@ class SQLAlchemyOrderRepository(AbstractOrderRepository):
 
 class SQLAlchemyUserRepository(AbstractUserRepository):
     #  Write ops
+    @override
     async def add(self, user: User) -> User:
         async with get_db() as session:
             orm = UserORM(username=user.username, email=user.email, password=user.password_hash)
@@ -88,39 +96,53 @@ class SQLAlchemyUserRepository(AbstractUserRepository):
             await session.refresh(orm)
             return _user_to_domain(orm)
 
+    @override
     async def delete(self, user_id: int) -> None:
         async with get_db() as session:
-            await session.execute(delete(UserORM).where(UserORM.id == user_id))
+            _ = await session.execute(delete(UserORM).where(UserORM.id == user_id))
             await session.commit()
 
+    @override
     async def update_email(self, user_id: int, new_email: str) -> None:
         async with get_db() as session:
-            await session.execute(
+            _ = await session.execute(
                 update(UserORM).where(UserORM.id == user_id).values(email=new_email),
             )
             await session.commit()
 
     # Read ops
+    @override
     async def get(self, user_id: int) -> User | None:
         async with get_db() as session:
             res = await session.execute(select(UserORM).where(UserORM.id == user_id))
             row = res.scalar_one_or_none()
             return _user_to_domain(row) if row else None
 
+    @override
     async def get_by_username(self, username: str) -> User | None:
         async with get_db() as session:
             res = await session.execute(select(UserORM).where(UserORM.username == username))
             row = res.scalar_one_or_none()
             return _user_to_domain(row) if row else None
 
-    async def list_all(self) -> Sequence[User]:
+    @override
+    async def list_all(self) -> list[User]:
         async with get_db() as session:
-            res = await session.execute(select(UserORM))
-            return [_user_to_domain(r) for r in res.scalars().all()]
+            result = await session.execute(
+                select(
+                    UserORM.id,
+                    UserORM.username,
+                    UserORM.email,
+                )
+            )
+            rows = result.all()
+
+        return [User(id=row.id, username=row.username, email=row.email, password_hash="") for row in rows]  # pyright:ignore[reportAny]
 
 
 class SQLAlchemyProductRepository(AbstractProductRepository):
     # Write ops
+    @override
     async def add(self, product: Product) -> Product:
         async with get_db() as session:
             orm = ProductORM(
@@ -134,45 +156,45 @@ class SQLAlchemyProductRepository(AbstractProductRepository):
             await session.refresh(orm)
             return _product_to_domain(orm)
 
+    @override
     async def delete(self, product_id: int) -> None:
         async with get_db() as session:
-            await session.execute(delete(ProductORM).where(ProductORM.id == product_id))
+            _ = await session.execute(delete(ProductORM).where(ProductORM.id == product_id))
             await session.commit()
 
+    @override
     async def update_stock(self, product_id: int, new_stock: int) -> None:
         async with get_db() as session:
-            await session.execute(
+            _ = await session.execute(
                 update(ProductORM).where(ProductORM.id == product_id).values(stock=new_stock),
             )
             await session.commit()
 
+    @override
     async def update_price(self, product_id: int, new_price: float) -> None:
         async with get_db() as session:
-            await session.execute(
+            _ = await session.execute(
                 update(ProductORM).where(ProductORM.id == product_id).values(price=new_price),
             )
             await session.commit()
 
     # Read ops
+    @override
     async def get(self, product_id: int) -> Product | None:
         async with get_db() as session:
             res = await session.execute(select(ProductORM).where(ProductORM.id == product_id))
             row = res.scalar_one_or_none()
             return _product_to_domain(row) if row else None
 
+    @override
     async def get_by_name(self, name: str) -> Product | None:
         async with get_db() as session:
             res = await session.execute(select(ProductORM).where(ProductORM.name == name))
             row = res.scalar_one_or_none()
             return _product_to_domain(row) if row else None
 
+    @override
     async def list_all(self) -> Sequence[Product]:
         async with get_db() as session:
             res = await session.execute(select(ProductORM))
             return [_product_to_domain(r) for r in res.scalars().all()]
-
-
-# TODO: change res/row to earlier implementation?
-# q = select(Product)
-# result = await session.execute(q)
-# products = result.scalars().all()

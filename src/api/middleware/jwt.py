@@ -10,13 +10,15 @@ from domain.auth.auth import AbstractTokenVerifier
 class JWTMiddleware:
     def __init__(self, verifier: AbstractTokenVerifier):
         self._verifier = verifier
-        self._public_endpoints = [("/login", "POST")]  # extend?..
+        self._public_endpoints = [
+            ("/login", "POST"),
+        ]  # extend?..
 
     async def process_request(self, req: falcon.Request, resp: falcon.Response):
         _ = resp
 
         route_method = (req.path, req.method.upper())
-        if route_method in self._public_endpoints:
+        if route_method in self._public_endpoints or req.path.startswith("/apidoc") or req.path == "/favicon.ico":
             return
 
         auth_header = req.get_header("Authorization")

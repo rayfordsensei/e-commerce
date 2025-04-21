@@ -2,6 +2,9 @@
     dependencies = [
         "aiosqlite",
         "alembic",
+        "apispec>=6.8.1",
+        "apispec-pydantic-plugin>=0.7.0",
+        "apispec-webframeworks>=1.2.0",
         "bcrypt>=4.3.0",
         "databases",
         "falcon",
@@ -10,14 +13,16 @@
         "loguru>=0.7.3",
         "pydantic-settings>=2.8.1",
         "pydantic[email]>=2.11.3",
+        "spectree>=1.4.6",
         "sqlalchemy",
+        "swagger-ui-bundle>=1.1.0",
         "uvicorn[standard]",
 ]
-    description = "TODO"
+    description = "A lightweight, asynchronous RESTful e-commerce backend API."
     name = "e-commerce"
     readme = "README.md"
     requires-python = ">=3.12.9"
-    version = "0.1.0"
+    version = "1.0.0"
 
 [dependency-groups]
     dev = ["basedpyright", "ruff"]

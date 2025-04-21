@@ -7,11 +7,12 @@ SRC_DIR = BASE_DIR / "src"
 
 sys.path.insert(0, str(SRC_DIR))
 
-from app.app import app as application  # noqa: E402  # ModuleNotFoundError otherwise
+from app.app import app as application
 
 # TODO: context_types?
 # TODO: pytest?
 # TODO: pagination + filtering
+# TODO: HATEOAS?
 # TODO: SimpleNamespace for req (esp. in request_logger)?
 # TODO: Swagger/ReDoc? (falcon-apispec, falcon-oas)
 # TODO: background tasks?
@@ -20,7 +21,7 @@ from app.app import app as application  # noqa: E402  # ModuleNotFoundError othe
 # TODO: implement different logging conf for dev/prod (structlog?)
 # TODO: log request body for safe endpoints (logger.debug?)
 # TODO: differ between log levels (only "INFO" for now)
-# TODO: Make consistent hints for API endpoints in interfaces/http/, like:
+# TODO: Make consistent hints for API endpoints in api/routes/, like:
 # ───────────────────────────
 # POST /products
 # ───────────────────────────
@@ -47,3 +48,8 @@ from app.app import app as application  # noqa: E402  # ModuleNotFoundError othe
 # logger = logging.getLogger(...)  # is not needed anymore
 
 # TODO: wrong token causes a ValueError("Invalid JSON Web Signature") with 500 Internal Server Error
+# TODO: switch json encoder to a faster lib (orjson?)
+# TODO: persistent db sessions / pooling?
+# TODO: cache hot rows? (`functools.lru_cache`? redis?)
+# TODO: simple frontend as a showcase
+# TODO: intermediate tables?

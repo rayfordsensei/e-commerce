@@ -1,5 +1,4 @@
 import abc
-from collections.abc import Sequence
 
 from .entities import User
 
@@ -28,5 +27,5 @@ class AbstractUserRepository(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def list_all(self) -> Sequence[User]:
+    async def list_all(self) -> list[User]:
         pass

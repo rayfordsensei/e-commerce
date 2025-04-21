@@ -1,6 +1,9 @@
-from typing import TypedDict
+import asyncio
+from typing import TypedDict, final
 
+from falcon import Request, Response
 from falcon.asgi import App
+from swagger_ui_bundle import swagger_ui_path
 
 from api.middleware.jwt import JWTMiddleware
 from api.middleware.lifespan import LifespanMiddleware
@@ -10,6 +13,7 @@ from api.routes.order_resource import OrderResource
 from api.routes.product_resource import ProductResource
 from api.routes.user_resource import UserResource
 from app.logging_conf import setup_logging
+from app.spectree import api
 from infrastructure.databases.db import close_db, init_db
 from infrastructure.jwt.service import JsonWebTokenService
 from infrastructure.sqlalchemy.repositories import (
@@ -21,6 +25,31 @@ from services.use_cases.auth import AuthenticateUser
 from services.use_cases.orders import CreateOrder, DeleteOrder, GetOrder, ListOrders, UpdateOrderFields
 from services.use_cases.products import CreateProduct, DeleteProduct, GetProduct, ListProducts, UpdateProductFields
 from services.use_cases.users import DeleteUser, GetUser, ListUsers, RegisterUser
+
+
+@final
+class SwaggerUIIndex:
+    async def on_get(self, req: Request, resp: Response) -> None:  # noqa: PLR6301
+        _ = req
+
+        html_file = swagger_ui_path / "index.html"
+
+        text = await asyncio.to_thread(html_file.read_text, encoding="utf-8")
+        text = text.replace("https://petstore.swagger.io/v2/swagger.json", "/openapi.json")
+
+        resp.content_type = "text/html"
+        resp.text = text
+
+
+class FaviconResource:  # Opting for a cutesy look!
+    async def on_get(self, req: Request, resp: Response) -> None:  # noqa: PLR6301
+        _ = req
+
+        icon_path = swagger_ui_path / "favicon-32x32.png"
+        icon_bytes = await asyncio.to_thread(icon_path.read_bytes)
+
+        resp.content_type = "image/png"
+        resp.data = icon_bytes
 
 
 class Repositories(TypedDict):
@@ -140,5 +169,8 @@ def create_app() -> LifespanMiddleware:
     app.add_route("/products/{product_id:int}", resources["products"])
     app.add_route("/users", resources["users"])
     app.add_route("/users/{user_id:int}", resources["users"])
+    app.add_route("/favicon.ico", FaviconResource())
+
+    api.register(app)
 
     return LifespanMiddleware(app, init_db, close_db)

@@ -46,9 +46,10 @@ A lightweight, asynchronous **RESTful** e-commerce backend API built with:
    ALEMBIC_URI=sqlite:///ecommerce.db
    ```
 
-3. **Apply database migrations**:
+3. **Initialize the database using Alembic**:
 
    ```bash
+   alembic revision --autogenerate -m "Initial migration"
    alembic upgrade head
    ```
 
