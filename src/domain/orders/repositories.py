@@ -7,7 +7,7 @@ from .entities import Order
 class AbstractOrderRepository(abc.ABC):
     # Write ops
     @abc.abstractmethod
-    async def add(self, order: Order) -> Order:
+    async def add(self, order: Order) -> Order | None:
         pass
 
     @abc.abstractmethod

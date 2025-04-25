@@ -2,6 +2,7 @@ import datetime
 from typing import Final, override
 
 from joserfc import jwt
+from joserfc.errors import ExpiredTokenError
 
 from app.settings import settings
 from domain.auth.auth import AbstractTokenIssuer, AbstractTokenVerifier
@@ -26,5 +27,13 @@ class JsonWebTokenService(AbstractTokenIssuer, AbstractTokenVerifier):
 
     @override
     def verify(self, token: str) -> int:
-        claims = jwt.decode(value=token, key=_SECRET, algorithms=[_ALG]).claims
+        decoded = jwt.decode(value=token, key=_SECRET, algorithms=[_ALG])
+        claims = decoded.claims
+
+        exp_ts = int(claims.get("exp", 0))  # pyright:ignore[reportAny]
+        now_ts = int(datetime.datetime.now(datetime.UTC).timestamp())
+
+        if exp_ts < now_ts:
+            raise ExpiredTokenError(description="Token has expired")
+
         return int(claims["sub"])  # pyright:ignore[reportAny]

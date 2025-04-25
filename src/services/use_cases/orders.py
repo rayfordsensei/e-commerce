@@ -1,29 +1,29 @@
-import datetime
-from dataclasses import dataclass
+from collections.abc import Callable
 from typing import final
 
 from domain.orders.entities import Order
 from domain.orders.repositories import AbstractOrderRepository
-from domain.users.repositories import AbstractUserRepository
+from infrastructure.databases.unit_of_work import UnitOfWork
 from services.use_cases import BaseUseCase
 
 
-@dataclass(slots=True)
-class CreateOrder(BaseUseCase[AbstractUserRepository]):
-    _orders: AbstractOrderRepository
+class CreateOrder:
+    _uow_factory: Callable[[], UnitOfWork]
+
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]):
+        self._uow_factory = uow_factory
 
     async def __call__(self, user_id: int, total: float) -> Order:
-        # business rules (field verification)
-        if await self._repo.get(user_id) is None:
-            raise ValueError("User does not exist")  # noqa: EM101, TRY003
+        async with self._uow_factory() as uow:
+            assert uow.users is not None, "UnitOfWork.users not initialized"
 
-        order = Order(
-            id=None,
-            user_id=user_id,
-            total_price=total,
-            created_at=datetime.datetime.now(tz=datetime.UTC),  # TODO: isoformat?..
-        )
-        return await self._orders.add(order)
+            if await uow.users.get(user_id) is None:
+                raise ValueError("User does not exist")  # noqa: EM101, TRY003
+
+            order = Order(id=None, user_id=user_id, total_price=total)
+            assert uow.orders is not None, "UnitOfWork.orders not initialized"
+
+            return await uow.orders.add(order)
 
 
 @final
@@ -41,15 +41,25 @@ class GetOrder(BaseUseCase[AbstractOrderRepository]):
 
 
 @final
-class DeleteOrder(BaseUseCase[AbstractOrderRepository]):
+class DeleteOrder:
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]) -> None:
+        self._uow_factory = uow_factory
+
     async def __call__(self, order_id: int) -> None:
-        await self._repo.delete(order_id)
+        async with self._uow_factory() as uow:
+            assert uow.orders is not None
+            await uow.orders.delete(order_id)
 
 
 @final
-class UpdateOrderFields(BaseUseCase[AbstractOrderRepository]):
+class UpdateOrderFields:
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]) -> None:
+        self._uow_factory = uow_factory
+
     async def __call__(self, order_id: int, total_price: float | None) -> None:
         if total_price is None:
             raise ValueError("total_price is required.")  # noqa: EM101, TRY003
 
-        await self._repo.update_total(order_id, total_price)
+        async with self._uow_factory() as uow:
+            assert uow.orders is not None
+            await uow.orders.update_total(order_id, total_price)

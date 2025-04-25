@@ -16,7 +16,7 @@ from domain.users.entities import User
 from infrastructure.sqlalchemy.repositories import SQLAlchemyUserRepository
 
 
-async def create_user(username: str, email: str, password: str) -> None:
+async def create_user(username: str, email: str, password: str):
     repo = SQLAlchemyUserRepository()
     user = User(id=None, username=username, email=email, password_hash=hash_password(password))
 
@@ -33,7 +33,7 @@ async def create_user(username: str, email: str, password: str) -> None:
     print(f"Created test user: id={created.id}, username={created.username}, email={created.email}")
 
 
-def main() -> None:
+def main():
     if len(sys.argv) != 4:  # noqa: PLR2004  # magic is fun!
         print("Usage: seed_test_user.py <username> <email> <password>")
         sys.exit(1)

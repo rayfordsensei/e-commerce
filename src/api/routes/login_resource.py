@@ -10,11 +10,11 @@ from services.use_cases.auth import AuthenticateUser
 
 @final
 class LoginResource:
-    def __init__(self, authenticate_uc: AuthenticateUser) -> None:
+    def __init__(self, authenticate_uc: AuthenticateUser):
         self._authenticate = authenticate_uc
 
     # POST /login
-    @api.validate(  # pyright:ignore[reportUnknownMemberType, reportUntypedFunctionDecorator]  # write a stub?.. hell no
+    @api.validate(  # pyright:ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
         json=LoginIn,
         resp=Response(
             HTTP_200=TokenOut,
@@ -22,7 +22,7 @@ class LoginResource:
         ),
         tags=["Auth"],
     )
-    async def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:
+    async def on_post(self, req: falcon.Request, resp: falcon.Response):
         """Authenticate user and return a JWT.
 
         Accepts username & password, returns a signed token valid for 4 hours.

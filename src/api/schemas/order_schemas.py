@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field, FieldSerializationInfo, field_serializer
 
 
 class OrderCreate(BaseModel):
@@ -34,11 +36,17 @@ class OrderOut(BaseModel):
         description="Order total price",
         examples=[99.95, 19.99],
     )
-    created_at: str = Field(
+    created_at: datetime = Field(
         ...,
-        description="Timestamp when the order was created",
-        examples=[],  # TODO: add examples? isoformat (ISO 8601?)?..
+        description="Timestamp when the order was created (ISO 8601)",
+        examples=["2025-04-22T12:34:56.789012+00:00"],
     )
+
+    @field_serializer("created_at")
+    @staticmethod
+    def _serialize_created_at(dt: datetime, _info: FieldSerializationInfo) -> str:
+        # Accept the datetime from domain/repo and emit an ISO string
+        return dt.isoformat()
 
 
 class OrderFilter(BaseModel):
@@ -65,8 +73,5 @@ class OrderError(BaseModel):
         description="Error message explaining why the operation failed",
         examples=["Order not found"],
     )
-    request_id: str | None = Field(
-        None,
-        description="Request ID for tracing, if any",
-        examples=["abcd1234-5678-90ef-ghij-1234567890kl"],
-    )
+    request_id: str | None = None
+    # Field(None, description="Request ID for tracing, if any", examples=["abcd1234-5678-90ef-ghij-1234567890kl"])

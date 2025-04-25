@@ -1,19 +1,35 @@
+from collections.abc import Callable
 from typing import final
+
+from sqlalchemy.exc import IntegrityError
 
 from domain.products.entities import Product
 from domain.products.repositories import AbstractProductRepository
+from infrastructure.databases.unit_of_work import UnitOfWork
 from services.use_cases import BaseUseCase
 
 
 @final
-class CreateProduct(BaseUseCase[AbstractProductRepository]):
-    async def __call__(self, name: str, description: str, price: float, stock: int) -> Product:
-        # Business rules (field verification)
-        if await self._repo.get_by_name(name):
-            raise ValueError("Product name already exists")  # noqa: EM101, TRY003
+class CreateProduct:
+    _uow_factory: Callable[[], UnitOfWork]
 
-        product = Product(id=None, name=name, description=description, price=price, stock=stock)
-        return await self._repo.add(product)
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]) -> None:
+        self._uow_factory = uow_factory
+
+    async def __call__(self, name: str, description: str, price: float, stock: int) -> Product:
+        async with self._uow_factory() as uow:
+            assert uow.products is not None, "UnitOfWork.products not initialised"
+
+            if await uow.products.get_by_name(name):
+                raise ValueError("Product name already exists")  # noqa: EM101, TRY003
+
+            try:
+                return await uow.products.add(
+                    Product(id=None, name=name, description=description, price=price, stock=stock)
+                )
+
+            except IntegrityError:
+                raise ValueError("Product name already exists") from None  # noqa: EM101, TRY003
 
 
 @final
@@ -29,19 +45,30 @@ class GetProduct(BaseUseCase[AbstractProductRepository]):
 
 
 @final
-class DeleteProduct(BaseUseCase[AbstractProductRepository]):
+class DeleteProduct:
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]) -> None:
+        self._uow_factory = uow_factory
+
     async def __call__(self, product_id: int) -> None:
-        await self._repo.delete(product_id)
+        async with self._uow_factory() as uow:
+            assert uow.products is not None
+            await uow.products.delete(product_id)
 
 
 @final
-class UpdateProductFields(BaseUseCase[AbstractProductRepository]):
+class UpdateProductFields:
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]) -> None:
+        self._uow_factory = uow_factory
+
     async def __call__(self, product_id: int, price: float | None, stock: int | None) -> None:
         if price is None and stock is None:
             raise ValueError("No valid fields to update")  # noqa: EM101, TRY003
 
-        if price is not None:
-            await self._repo.update_price(product_id, price)
+        async with self._uow_factory() as uow:
+            assert uow.products is not None
 
-        if stock is not None:
-            await self._repo.update_stock(product_id, stock)
+            if price is not None:
+                await uow.products.update_price(product_id, price)
+
+            if stock is not None:
+                await uow.products.update_stock(product_id, stock)

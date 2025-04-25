@@ -7,4 +7,4 @@ class Order:
     id: int | None
     user_id: int
     total_price: float
-    created_at: datetime  # TODO: ...iso?
+    created_at: datetime | None = None

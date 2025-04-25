@@ -48,8 +48,5 @@ class UserError(BaseModel):
         description="Error message explaining why the operation failed",
         examples=["User not found"],
     )
-    request_id: str | None = Field(
-        None,
-        description="Request ID for tracing, if any",
-        examples=["abcd1234-5678-90ef-ghij-1234567890kl"],
-    )
+    request_id: str | None = None
+    # Field(None, description="Request ID for tracing, if any", examples=["abcd1234-5678-90ef-ghij-1234567890kl"])

@@ -1,6 +1,6 @@
 from typing import final
 
-import falcon
+from falcon import HTTPUnauthorized, Request, Response
 from joserfc.errors import ExpiredTokenError, JoseError
 
 from domain.auth.auth import AbstractTokenVerifier
@@ -14,8 +14,8 @@ class JWTMiddleware:
             ("/login", "POST"),
         ]  # extend?..
 
-    async def process_request(self, req: falcon.Request, resp: falcon.Response):
-        _ = resp
+    async def process_resource(self, req: Request, resp: Response, resource: object, params: dict[str, str]):
+        _ = resp, resource, params
 
         route_method = (req.path, req.method.upper())
         if route_method in self._public_endpoints or req.path.startswith("/apidoc") or req.path == "/favicon.ico":
@@ -23,7 +23,7 @@ class JWTMiddleware:
 
         auth_header = req.get_header("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
-            raise falcon.HTTPUnauthorized(description="Missing or invalid Authorization header")
+            raise HTTPUnauthorized(description="Missing or invalid Authorization header")
 
         token = auth_header.split(" ", 1)[1]
         try:
@@ -31,6 +31,6 @@ class JWTMiddleware:
             req.context.user_id = user_id
 
         except ExpiredTokenError:
-            raise falcon.HTTPUnauthorized(description="Token has expired") from ExpiredTokenError
-        except (JoseError, KeyError):
-            raise falcon.HTTPUnauthorized(description="Invalid token") from None  # B904
+            raise HTTPUnauthorized(description="Token has expired") from ExpiredTokenError
+        except (JoseError, KeyError, ValueError):
+            raise HTTPUnauthorized(description="Invalid token") from None  # B904

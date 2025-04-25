@@ -77,7 +77,7 @@ class ProductUpdate(BaseModel):
 
     @model_validator(mode="after")
     def require_price_or_stock(self) -> Self:
-        """Ensure that at least one of price or stock is provided."""
+        """Ensure that at least one of price or stock is provided."""  # noqa: DOC201, DOC501
         if self.price is None and self.stock is None:
             raise ValueError("At least one of 'price' or 'stock' must be provided")  # noqa: EM101, TRY003
         return self
@@ -89,8 +89,5 @@ class ProductError(BaseModel):
         description="Error message explaining why the operation failed",
         examples=["Product not found"],
     )
-    request_id: str | None = Field(
-        None,
-        description="Request ID for tracing, if any",
-        examples=["5d89aeac-d9ab-4c02-b8e9-4b9bb476c019"],
-    )
+    request_id: str | None = None
+    # Field(None, description="Request ID for tracing, if any", examples=["abcd1234-5678-90ef-ghij-1234567890kl"])

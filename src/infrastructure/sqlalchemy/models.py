@@ -11,10 +11,6 @@ class Base(DeclarativeBase):
 
 @final
 class Order(Base):
-    @property
-    def created_at_iso(self) -> str:
-        return self.created_at.isoformat()
-
     __tablename__: str = "orders"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
