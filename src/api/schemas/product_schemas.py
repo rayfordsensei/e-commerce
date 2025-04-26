@@ -77,7 +77,6 @@ class ProductUpdate(BaseModel):
 
     @model_validator(mode="after")
     def require_price_or_stock(self) -> Self:
-        """Ensure that at least one of price or stock is provided."""  # noqa: DOC201, DOC501
         if self.price is None and self.stock is None:
             raise ValueError("At least one of 'price' or 'stock' must be provided")  # noqa: EM101, TRY003
         return self

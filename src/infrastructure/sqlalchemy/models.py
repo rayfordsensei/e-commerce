@@ -40,10 +40,11 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(100), nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="user")
+    products: Mapped[list["Product"]] = relationship("Product", back_populates="owner")
 
     __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
         Index("ix_users_username", "username"),
@@ -65,10 +66,13 @@ class Product(Base):
     price: Mapped[float] = mapped_column(Float, nullable=False)
     stock: Mapped[int] = mapped_column(Integer, nullable=False)
 
+    owner_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    owner: Mapped["User"] = relationship("User", back_populates="products", lazy="joined")
+
     __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
         CheckConstraint("price >= 0", name="check_price_non_negative"),
         CheckConstraint("stock >= 0", name="check_stock_non_negative"),
-        Index("ix_products_name", "name"),
+        Index("ux_products_name_lower", func.lower(name), unique=True),
     )
 
     @override

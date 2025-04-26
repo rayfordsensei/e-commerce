@@ -1,16 +1,4 @@
-from typing import Any
-
 import bcrypt
-import falcon
-
-
-def error_response(resp: falcon.Response, status_code: str, message: str):
-    resp.status = status_code
-    resp.media = {"error": message}
-
-
-def get_missing_fields(data: dict[str, Any], required_fields: list[str]) -> list[str]:  # pyright:ignore[reportExplicitAny]
-    return [field for field in required_fields if not data.get(field)]
 
 
 def hash_password(plain: str) -> str:

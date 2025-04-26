@@ -17,6 +17,10 @@ class AbstractUserRepository(abc.ABC):
     async def update_email(self, user_id: int, new_email: str) -> None:
         pass
 
+    @abc.abstractmethod
+    async def update_username(self, user_id: int, new_username: str) -> None:
+        pass
+
     # Read ops
     @abc.abstractmethod
     async def get(self, user_id: int) -> User | None:

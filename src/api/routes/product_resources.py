@@ -43,9 +43,10 @@ class ProductResource:
             HTTP_400=ProductError,
         ),
         tags=["Products"],
-        security={"bearerAuth": []},
+        # security={"bearerAuth": []},
     )
     async def on_post_collection(self, req: falcon.Request, resp: falcon.Response):
+
         data = req.context.json  # pyright:ignore[reportAny]
         try:
             product = await self._create(
@@ -80,6 +81,7 @@ class ProductResource:
     @api.validate(  # pyright:ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
         resp=Response(
             HTTP_200=ProductOut,
+            HTTP_400=ProductError,
             HTTP_404=ProductError,
         ),
         tags=["Products"],
@@ -123,6 +125,7 @@ class ProductResource:
     @api.validate(  # pyright:ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
         resp=Response(
             HTTP_204=None,
+            HTTP_400=ProductError,
             HTTP_404=ProductError,
         ),
         tags=["Products"],

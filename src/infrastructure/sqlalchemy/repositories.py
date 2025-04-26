@@ -4,11 +4,9 @@ from inspect import isawaitable
 from typing import Any, TypeVar, final, override
 
 import falcon
-from loguru import logger
-from sqlalchemy import Select, delete, event, select, update
+from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
 from domain.orders.entities import Order
 from domain.orders.repositories import AbstractOrderRepository
@@ -35,26 +33,13 @@ def _user_to_domain(row: UserORM) -> User:
 
 
 def _product_to_domain(row: ProductORM) -> Product:
-    return Product(id=row.id, name=row.name, description=row.description, price=row.price, stock=row.stock)
-
-
-def _order_to_domain(row: OrderORM) -> Order:
-    return Order(
-        id=row.id,
-        user_id=row.user_id,
-        total_price=row.total_price,
-        created_at=row.created_at,
+    return Product(
+        id=row.id, name=row.name, description=row.description, price=row.price, stock=row.stock, owner_id=row.owner_id
     )
 
 
-def _warn_unexpected_rollback(session: AsyncSession) -> None:
-    logger.warning("Session {} issued an unexpected ROLLBACK", id(session))
-
-    if session.in_transaction():
-        logger.warning("Unexpected open transaction for session {}", id(session))
-
-
-event.listen(Session, "after_rollback", _warn_unexpected_rollback)
+def _order_to_domain(row: OrderORM) -> Order:
+    return Order(id=row.id, user_id=row.user_id, total_price=row.total_price, created_at=row.created_at)
 
 
 class BaseSQLAlchemyRepo[Entity, Domain]:  # noqa: B903
@@ -83,34 +68,44 @@ class BaseSQLAlchemyRepo[Entity, Domain]:  # noqa: B903
             sess = self._session
             await self._maybe_await(work(sess, orm))
 
-            await sess.flush()
-            await sess.refresh(orm)
+            try:
+                await sess.flush()
 
+            except IntegrityError:
+                await sess.rollback()
+                raise
+
+            await sess.refresh(orm)
             return self._to_domain(orm)
 
         async with AsyncSessionLocal() as sess:
             await self._maybe_await(work(sess, orm))
 
-            await sess.flush()
-            await sess.refresh(orm)
-            await sess.commit()
+            try:
+                await sess.flush()
+                await sess.commit()
 
+            except IntegrityError:
+                await sess.rollback()
+                raise
+
+            await sess.refresh(orm)
             return self._to_domain(orm)
 
     async def _exec(self, work: Callable[[AsyncSession], Any]):  # pyright:ignore[reportExplicitAny]
         if self._session is not None:
             sess = self._session
-            result = await self._maybe_await(work(sess))
+            result = await self._maybe_await(work(sess))  # pyright:ignore[reportAny]
 
-            rowcount = getattr(result, "rowcount", None)
+            rowcount = getattr(result, "rowcount", None)  # pyright:ignore[reportAny]
             if rowcount is None or rowcount < 1:
                 raise falcon.HTTPNotFound(description="Resource not found")
             return
 
         async with AsyncSessionLocal() as sess:
-            result = await self._maybe_await(work(sess))
+            result = await self._maybe_await(work(sess))  # pyright:ignore[reportAny]
 
-            rowcount = getattr(result, "rowcount", None)
+            rowcount = getattr(result, "rowcount", None)  # pyright:ignore[reportAny]
             if rowcount is None or rowcount < 1:
                 raise falcon.HTTPNotFound(description="Resource not found")
 
@@ -192,24 +187,15 @@ class SQLAlchemyUserRepository(BaseSQLAlchemyRepo[UserORM, User], AbstractUserRe
     #  Write ops
     @override
     async def add(self, user: User) -> User:
+        async with self._get_session() as sess:
+            existing = await sess.execute(select(UserORM).where(UserORM.username == user.username))
+            row: UserORM | None = existing.scalar_one_or_none()
+
+            if row:
+                return _user_to_domain(row)
+
         orm = UserORM(username=user.username, email=user.email, password=user.password_hash)
-
-        async with self._get_session() as session:
-            session.add(orm)
-
-            try:
-                if self._session is None:
-                    await session.commit()
-                else:
-                    await session.flush()
-
-                await session.refresh(orm)
-
-            except IntegrityError:
-                await session.rollback()
-                raise
-
-            return _user_to_domain(orm)
+        return await self._save(orm, lambda sess, o: sess.add(o))
 
     @override
     async def delete(self, user_id: int) -> None:
@@ -217,16 +203,13 @@ class SQLAlchemyUserRepository(BaseSQLAlchemyRepo[UserORM, User], AbstractUserRe
 
     @override
     async def update_email(self, user_id: int, new_email: str) -> None:
-        async with self._get_session() as session:
-            _ = await session.execute(
-                update(UserORM).where(UserORM.id == user_id).values(email=new_email),
-            )
+        await self._exec(lambda s: s.execute(update(UserORM).where(UserORM.id == user_id).values(email=new_email)))
 
-            await session.flush()
-            if self._session is None:
-                await session.commit()
-
-            return
+    @override
+    async def update_username(self, user_id: int, new_username: str) -> None:
+        await self._exec(
+            lambda s: s.execute(update(UserORM).where(UserORM.id == user_id).values(username=new_username))
+        )
 
     # Read ops
     @override
@@ -268,9 +251,22 @@ class SQLAlchemyProductRepository(BaseSQLAlchemyRepo[ProductORM, Product], Abstr
     # Write ops
     @override
     async def add(self, product: Product) -> Product:
-        orm = ProductORM(name=product.name, description=product.description, price=product.price, stock=product.stock)
+        async with self._get_session() as s:
+            res = await s.execute(select(ProductORM).where(func.lower(ProductORM.name) == product.name.lower()))
+            existing: ProductORM | None = res.scalar_one_or_none()
 
-        return await self._save(orm, lambda s, o: s.add(o))
+            if existing:
+                if existing.name == product.name:
+                    return _product_to_domain(existing)
+                raise ValueError("Duplicate product name")  # noqa: EM101, TRY003
+
+        orm = ProductORM(
+            name=product.name,
+            description=product.description,
+            price=product.price,
+            stock=product.stock,
+        )
+        return await self._save(orm, lambda sess, o: sess.add(o))
 
     @override
     async def delete(self, product_id: int) -> None:

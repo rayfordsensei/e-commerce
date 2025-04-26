@@ -32,15 +32,14 @@ async def test_product_crud(async_client: AsyncClient, auth_token: str):
 
 
 @pytest.mark.asyncio
-async def test_duplicate_product_name_rejected(async_client: AsyncClient, auth_token: str):
+async def test_duplicate_name_case_insensitive(async_client: AsyncClient, auth_token: str):
     payload = {"name": "Unique", "description": "", "price": 1.0, "stock": 1}
-
     _ = await async_client.post("/products", json=payload, headers={"Authorization": f"Bearer {auth_token}"})
-
-    dup = await async_client.post("/products", json=payload, headers={"Authorization": f"Bearer {auth_token}"})
-
+    dup = await async_client.post(
+        "/products", json={**payload, "name": "unique"}, headers={"Authorization": f"Bearer {auth_token}"}
+    )
     assert dup.status_code == 400  # noqa: PLR2004
-    assert dup.json()["error"] == "Product name already exists"
+    assert "duplicate" in dup.json()["error"].lower()  # pyright:ignore[reportAny]
 
 
 @pytest.mark.asyncio

@@ -38,14 +38,14 @@ EXPIRED = _issue(1, ttl=-60)
 BAD_SECRET = _issue(1, secret="oops")  # noqa: S106
 WRONG_ALG = _issue(1, alg="HS512")
 MALFORMED_HEADERS: list[dict[str, str] | list[tuple[str, str]]] = [
-    {"Authorization": "Token abc"},  # missing Bearer
-    {"Authorization": "totally-invalid"},  # random bytes
-    [("Authorization", "abc"), ("Authorization", "def")],  # duplicate hdrs
+    {"Authorization": "Token abc"},
+    {"Authorization": "totally-invalid"},
+    [("Authorization", "abc"), ("Authorization", "def")],
 ]
 
 
 @pytest.mark.asyncio
-async def test_login_with_valid_creds(async_client: AsyncClient, create_user):  # noqa: ANN001 #pyright:ignore[reportUnknownParameterType, reportMissingParameterType]
+async def test_login_with_valid_creds(async_client: AsyncClient, create_user):  # noqa: ANN001  # pyright:ignore[reportUnknownParameterType, reportMissingParameterType]
     creds = await create_user("alice", "alice@example.com", "validpassword")  # pyright:ignore[reportUnknownVariableType]
 
     resp = await async_client.post("/login", json={"username": "alice", "password": "validpassword"})

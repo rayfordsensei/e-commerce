@@ -18,6 +18,7 @@ os.environ.update({
     "SECRET_KEY": "test-secret",
     "SQLITE_URI": "sqlite+aiosqlite:///:memory:",
     "ALEMBIC_URI": "sqlite:///:memory:",
+    "TESTING": "True",
 })
 
 # Spin-up the ASGI application

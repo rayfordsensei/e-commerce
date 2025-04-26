@@ -33,18 +33,15 @@ class OrdersCollection:
         resp=spectree.Response(
             HTTP_201=OrderOut,
             HTTP_400=OrderError,
+            HTTP_404=OrderError,
         ),
         tags=["Orders"],
         security={"bearerAuth": []},
     )
     async def on_post(self, req: falcon.Request, resp: falcon.Response):
         data = req.context.json  # pyright:ignore[reportAny]
-        try:
-            order = await self._create(data.user_id, data.total_price)  # pyright:ignore[reportAny]
-        except ValueError as exc:
-            resp.status = falcon.HTTP_400
-            resp.media = OrderError(error=str(exc)).model_dump()
-            return
+
+        order = await self._create(data.user_id, data.total_price)  # pyright:ignore[reportAny]
 
         resp.status = falcon.HTTP_201
         resp.media = OrderOut.model_validate(order).model_dump()
@@ -81,6 +78,7 @@ class OrderDetail:
     @api.validate(  # pyright:ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
         resp=spectree.Response(
             HTTP_200=OrderOut,
+            HTTP_400=OrderError,
             HTTP_404=OrderError,
         ),
         tags=["Orders"],
@@ -102,15 +100,18 @@ class OrderDetail:
     @api.validate(  # pyright:ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
         resp=spectree.Response(
             HTTP_204=None,
+            HTTP_400=OrderError,
+            HTTP_403=OrderError,
             HTTP_404=OrderError,
         ),
         tags=["Orders"],
         security={"bearerAuth": []},
+        validation_error_status=0,
     )
     async def on_delete(self, req: falcon.Request, resp: falcon.Response, order_id: int):
         _ = req
 
-        await self._delete(order_id)
+        await self._delete(order_id, req.context.user_id)  # pyright:ignore[reportAny]
         resp.status = falcon.HTTP_204
 
     # PATCH /orders/{order_id}

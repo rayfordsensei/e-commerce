@@ -3,9 +3,9 @@ from typing import final
 import falcon
 from spectree import Response
 
-from api.schemas.user_schemas import UserCreate, UserError, UserOut
+from api.schemas.user_schemas import UserCreate, UserError, UserOut, UserUpdate
 from app.spectree import api
-from services.use_cases.users import DeleteUser, GetUser, ListUsers, RegisterUser
+from services.use_cases.users import DeleteUser, GetUser, ListUsers, RegisterUser, UpdateUserFields
 
 
 @final
@@ -15,11 +15,13 @@ class UserResource:
         register_uc: RegisterUser,
         list_uc: ListUsers,
         get_uc: GetUser,
+        update_uc: UpdateUserFields,
         delete_uc: DeleteUser,
     ):
         self._register = register_uc
         self._list = list_uc
         self._get = get_uc
+        self._update = update_uc
         self._delete = delete_uc
 
     # POST /users
@@ -63,6 +65,7 @@ class UserResource:
     @api.validate(  # pyright:ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
         resp=Response(
             HTTP_200=UserOut,
+            HTTP_400=UserError,
             HTTP_404=UserError,
         ),
         tags=["Users"],
@@ -81,10 +84,31 @@ class UserResource:
 
         resp.media = UserOut.model_validate(user).model_dump()
 
+    # PATCH /users/{user_id}
+    @api.validate(  # pyright:ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
+        json=UserUpdate,
+        resp=Response(
+            HTTP_204=None,
+            HTTP_400=UserError,
+            HTTP_404=UserError,
+        ),
+        tags=["Users"],
+        security={"bearerAuth": []},
+        path_parameter_descriptions={
+            "user_id": "ID of the user to update",
+        },
+    )
+    async def on_patch_detail(self, req: falcon.Request, resp: falcon.Response, user_id: int):
+        data = req.context.json  # pyright:ignore[reportAny]
+
+        await self._update(user_id, data.username, data.email)  # pyright:ignore[reportAny]
+        resp.status = falcon.HTTP_204
+
     # DELETE /users/{user_id}
     @api.validate(  # pyright:ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
         resp=Response(
             HTTP_204=None,
+            HTTP_400=UserError,
             HTTP_404=UserError,
             HTTP_409=UserError,
         ),

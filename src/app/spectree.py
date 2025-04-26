@@ -12,6 +12,7 @@ api = SpecTree(
     title="E-Commerce API",
     version="1.0.0",
     path="apidoc",  # -> /apidoc/swagger, /apidoc/redoc, /apidoc/scalar
+    validation_error_status=400,
     security_schemes=[
         SecurityScheme(
             name="bearerAuth",

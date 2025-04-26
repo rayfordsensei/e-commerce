@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from typing import Self
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 
 class UserCreate(BaseModel):
@@ -40,6 +42,27 @@ class UserOut(BaseModel):
         description="Account email address",
         examples=["jane_doe@example.com"],
     )
+
+
+class UserUpdate(BaseModel):
+    username: str | None = Field(
+        None,
+        min_length=3,
+        max_length=50,
+        description="New account username",
+        examples=["jane_new"],
+    )
+    email: EmailStr | None = Field(
+        None,
+        description="New account email address",
+        examples=["jane_new@example.com"],
+    )
+
+    @model_validator(mode="after")
+    def require_username_or_email(self) -> Self:
+        if self.username is None and self.email is None:
+            raise ValueError("At least one of 'username' or 'email' must be provided")  # noqa: EM101, TRY003
+        return self
 
 
 class UserError(BaseModel):

@@ -4,13 +4,11 @@
         "alembic",
         "bcrypt>=4.3.0",
         "falcon",
-        "fastopenapi[falcon]>=0.6.0",
         "joserfc>=1.0.4",
         "loguru>=0.7.3",
-        "openapi-core>=0.19.5",
-        "openapi-pydantic>=0.5.1",
         "pydantic-settings>=2.8.1",
         "pydantic[email]>=2.11.3",
+        "pytest-loguru>=0.4.0",
         "spectree>=1.4.6",
         "sqlalchemy",
         "swagger-ui-bundle>=1.1.0",
@@ -31,8 +29,8 @@
     "pytest>=8.3.5",
     "pytest-asyncio>=0.26.0",
     "ruff",
+    "vulture>=2.14",
 ]
 
 [tool.uv.sources]
-openapi-core = { git = "https://github.com/python-openapi/openapi-core" }
 falcon = { git = "https://github.com/falconry/falcon" }

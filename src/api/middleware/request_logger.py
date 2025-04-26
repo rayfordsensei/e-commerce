@@ -63,4 +63,4 @@ class RequestLoggerMiddleware:
         if isinstance(resp.media, dict):  # pyright:ignore[reportAny]
             resp.media["request_id"] = request_id  # pyright:ignore[reportUnknownMemberType]
 
-        logger.info("Response {}: {} | {} {} (Took %.3fs)", request_id, resp.status, req.method, req.path, duration)
+        logger.info("Response {}: {} | {} {} (Took {:.3f}s)", request_id, resp.status, req.method, req.path, duration)

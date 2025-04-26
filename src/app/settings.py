@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     SQLITE_URI: str
     ALEMBIC_URI: str
+    TESTING: bool = False
 
 
 settings = Settings()  # pyright:ignore[reportCallIssue] # Pydantic loads .env on runtime, so it doesn't matter

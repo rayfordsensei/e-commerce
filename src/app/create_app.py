@@ -18,15 +18,18 @@ from api.middleware.error_handler import generic_error_handler
 from api.middleware.jwt import JWTMiddleware
 from api.middleware.lifespan import LifespanMiddleware
 from api.middleware.request_logger import RequestLoggerMiddleware
+from api.middleware.role import RoleMiddleware
 from api.routes.login_resource import LoginResource
 from api.routes.order_resources import OrderDetail, OrdersCollection
 from api.routes.product_resources import ProductResource
 from api.routes.user_resources import UserResource
+from app.settings import settings
 from app.spectree import api
 from common.logging import setup_logging
 from infrastructure.databases.db import close_db, init_db
 from infrastructure.databases.unit_of_work import UnitOfWork
 from infrastructure.jwt.service import JsonWebTokenService
+from infrastructure.sqlalchemy import events as sa_events
 from infrastructure.sqlalchemy.repositories import (
     SQLAlchemyOrderRepository,
     SQLAlchemyProductRepository,
@@ -52,6 +55,7 @@ from services.use_cases.users import (
     GetUser,
     ListUsers,
     RegisterUser,
+    UpdateUserFields,
 )
 
 
@@ -81,6 +85,7 @@ class _UseCases(TypedDict):
     register_user: RegisterUser
     list_users: ListUsers
     get_user: GetUser
+    update_user_fields: UpdateUserFields
     delete_user: DeleteUser
 
 
@@ -160,6 +165,7 @@ def _create_use_cases(repos: _Repositories, services: _Services) -> _UseCases:
         "register_user": RegisterUser(UnitOfWork),
         "list_users": ListUsers(repos["users"]),
         "get_user": GetUser(repos["users"]),
+        "update_user_fields": UpdateUserFields(UnitOfWork),
         "delete_user": DeleteUser(UnitOfWork),
     }
 
@@ -198,6 +204,7 @@ def _create_resources(uc: _UseCases) -> _Resources:
             uc["register_user"],
             uc["list_users"],
             uc["get_user"],
+            uc["update_user_fields"],
             uc["delete_user"],
         ),
     }
@@ -230,6 +237,9 @@ class CrashResource:  # Just blowing things up =)
     async def on_get(self, req: falcon.Request, resp: falcon.Response):  # noqa: PLR6301
         _ = req, resp
 
+        if not settings.DEBUG:
+            raise falcon.HTTPNotFound
+
         raise ValueError("something went terribly wrong... or did it?")  # noqa: EM101, TRY003
 
 
@@ -254,6 +264,7 @@ def create_app(*, log_level: str = "INFO") -> LifespanMiddleware:
 
     """
     setup_logging(log_level)
+    sa_events.register_session_events()
 
     repos = _create_repositories()
     services = _create_services()
@@ -264,6 +275,7 @@ def create_app(*, log_level: str = "INFO") -> LifespanMiddleware:
         middleware=[
             RequestLoggerMiddleware(),
             JWTMiddleware(services["jwt"]),
+            # RoleMiddleware(),
         ]
     )
 

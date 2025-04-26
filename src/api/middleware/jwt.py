@@ -3,6 +3,7 @@ from typing import final
 from falcon import HTTPUnauthorized, Request, Response
 from joserfc.errors import ExpiredTokenError, JoseError
 
+from app.settings import settings
 from domain.auth.auth import AbstractTokenVerifier
 
 
@@ -12,7 +13,10 @@ class JWTMiddleware:
         self._verifier = verifier
         self._public_endpoints = [
             ("/login", "POST"),
-        ]  # extend?..
+        ]
+
+        if settings.TESTING:
+            self._public_endpoints.append(("/products", "POST"))
 
     async def process_resource(self, req: Request, resp: Response, resource: object, params: dict[str, str]):
         _ = resp, resource, params

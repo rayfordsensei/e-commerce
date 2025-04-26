@@ -8,3 +8,4 @@ class Product:
     description: str
     price: float
     stock: int
+    owner_id: int | None = None

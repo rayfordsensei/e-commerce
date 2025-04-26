@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import final
 
-from sqlalchemy.exc import IntegrityError
+import falcon
 
 from domain.products.entities import Product
 from domain.products.repositories import AbstractProductRepository
@@ -16,20 +16,24 @@ class CreateProduct:
     def __init__(self, uow_factory: Callable[[], UnitOfWork]) -> None:
         self._uow_factory = uow_factory
 
-    async def __call__(self, name: str, description: str, price: float, stock: int) -> Product:
+    async def __call__(
+        self, name: str, description: str, price: float, stock: int, owner_id: int | None = None
+    ) -> Product:
+        if not name or not name.strip():
+            raise ValueError("name must be at least 1 character")  # noqa: EM101, TRY003
+
+        if price < 0:
+            raise ValueError("price must be ≥ 0")  # noqa: EM101, TRY003
+
+        if stock < 0:
+            raise ValueError("stock must be ≥ 0")  # noqa: EM101, TRY003
+
         async with self._uow_factory() as uow:
             assert uow.products is not None, "UnitOfWork.products not initialised"
 
-            if await uow.products.get_by_name(name):
-                raise ValueError("Product name already exists")  # noqa: EM101, TRY003
-
-            try:
-                return await uow.products.add(
-                    Product(id=None, name=name, description=description, price=price, stock=stock)
-                )
-
-            except IntegrityError:
-                raise ValueError("Product name already exists") from None  # noqa: EM101, TRY003
+            return await uow.products.add(
+                Product(id=None, name=name, description=description, price=price, stock=stock, owner_id=owner_id)
+            )
 
 
 @final
@@ -62,10 +66,15 @@ class UpdateProductFields:
 
     async def __call__(self, product_id: int, price: float | None, stock: int | None) -> None:
         if price is None and stock is None:
-            raise ValueError("No valid fields to update")  # noqa: EM101, TRY003
+            raise ValueError("At least one of 'price' or 'stock' must be provided")  # noqa: EM101, TRY003
 
         async with self._uow_factory() as uow:
             assert uow.products is not None
+
+            existing = await uow.products.get(product_id)
+
+            if existing is None:
+                raise falcon.HTTPNotFound(description="Product not found")
 
             if price is not None:
                 await uow.products.update_price(product_id, price)

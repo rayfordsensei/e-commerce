@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import final
 
+import falcon
 from falcon import HTTPConflict
 from sqlalchemy.exc import IntegrityError
 
@@ -43,6 +44,30 @@ class ListUsers(BaseUseCase[AbstractUserRepository]):
 class GetUser(BaseUseCase[AbstractUserRepository]):
     async def __call__(self, user_id: int) -> User | None:
         return await self._repo.get(user_id)
+
+
+@final
+class UpdateUserFields:
+    def __init__(self, uow_factory: Callable[[], UnitOfWork]) -> None:
+        self._uow_factory = uow_factory
+
+    async def __call__(self, user_id: int, username: str | None = None, email: str | None = None) -> None:
+        if username is None and email is None:
+            raise ValueError("At least one of 'username' or 'email' must be provided")  # noqa: EM101, TRY003
+
+        async with self._uow_factory() as uow:
+            assert uow.users is not None
+
+            existing = await uow.users.get(user_id)
+
+            if existing is None:
+                raise falcon.HTTPNotFound(description="User not found")
+
+            if username is not None:
+                await uow.users.update_username(user_id, username)
+
+            if email is not None:
+                await uow.users.update_email(user_id, email)
 
 
 class DeleteUser:

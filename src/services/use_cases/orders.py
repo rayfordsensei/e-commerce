@@ -1,10 +1,13 @@
 from collections.abc import Callable
 from typing import final
 
+import falcon
+
 from domain.orders.entities import Order
 from domain.orders.repositories import AbstractOrderRepository
 from infrastructure.databases.unit_of_work import UnitOfWork
 from services.use_cases import BaseUseCase
+from services.use_cases.access_control import assert_owner
 
 
 class CreateOrder:
@@ -18,7 +21,7 @@ class CreateOrder:
             assert uow.users is not None, "UnitOfWork.users not initialized"
 
             if await uow.users.get(user_id) is None:
-                raise ValueError("User does not exist")  # noqa: EM101, TRY003
+                raise falcon.HTTPNotFound(description="User not found")
 
             order = Order(id=None, user_id=user_id, total_price=total)
             assert uow.orders is not None, "UnitOfWork.orders not initialized"
@@ -45,9 +48,15 @@ class DeleteOrder:
     def __init__(self, uow_factory: Callable[[], UnitOfWork]) -> None:
         self._uow_factory = uow_factory
 
-    async def __call__(self, order_id: int) -> None:
+    async def __call__(self, order_id: int, acting_user: int) -> None:
         async with self._uow_factory() as uow:
             assert uow.orders is not None
+
+            order = await uow.orders.get(order_id)
+            if order is None:
+                raise falcon.HTTPNotFound(description="Order not found")
+
+            assert_owner(order.user_id, acting_user)
             await uow.orders.delete(order_id)
 
 
@@ -62,4 +71,9 @@ class UpdateOrderFields:
 
         async with self._uow_factory() as uow:
             assert uow.orders is not None
+
+            order = await uow.orders.get(order_id)
+            if order is None:
+                raise falcon.HTTPNotFound(description="Order not found")
+
             await uow.orders.update_total(order_id, total_price)

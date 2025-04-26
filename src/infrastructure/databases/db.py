@@ -5,6 +5,7 @@ from sqlalchemy import StaticPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.settings import settings
+from infrastructure.sqlalchemy import events as sa_events
 
 DEBUG = settings.DEBUG
 SQLITE_URI = settings.SQLITE_URI
@@ -19,6 +20,7 @@ if SQLITE_URI.startswith("sqlite+aiosqlite") and ":memory:" in SQLITE_URI:
 
 engine = create_async_engine(SQLITE_URI, **engine_args)
 AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
+sa_events.register_engine_events(engine)
 
 
 @asynccontextmanager
