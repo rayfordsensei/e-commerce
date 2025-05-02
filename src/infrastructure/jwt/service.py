@@ -30,10 +30,10 @@ class JsonWebTokenService(AbstractTokenIssuer, AbstractTokenVerifier):
         decoded = jwt.decode(value=token, key=_SECRET, algorithms=[_ALG])
         claims = decoded.claims
 
-        exp_ts = int(claims.get("exp", 0))  # pyright:ignore[reportAny]
+        exp_ts = int(claims.get("exp", 0))
         now_ts = int(datetime.datetime.now(datetime.UTC).timestamp())
 
         if exp_ts < now_ts:
             raise ExpiredTokenError(description="Token has expired")
 
-        return int(claims["sub"])  # pyright:ignore[reportAny]
+        return int(claims["sub"])

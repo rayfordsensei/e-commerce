@@ -50,12 +50,9 @@ class OrderOut(BaseModel):
 
 
 class OrderFilter(BaseModel):
-    user_id: int | None = Field(
-        None,
-        gt=0,
-        description="Only return orders for this user ID (optional)",
-        examples=[1, 15, 25],
-    )
+    user_id: int | None = Field(None, gt=0, description="Only return orders for this user ID", examples=[1, 15, 25])
+    page: int = Field(1, ge=1, description="Page number (1-based)", examples=[3])
+    per_page: int = Field(20, ge=1, le=100, description="Number of items per page", examples=[50])
 
 
 class OrderUpdate(BaseModel):

@@ -1,36 +1,42 @@
 [project]
     dependencies = [
-        "aiosqlite",
-        "alembic",
+        "aiosqlite>=0.21.0",
+        "alembic>=1.15.2",
         "bcrypt>=4.3.0",
-        "falcon",
+        "falcon>=4.0.2",
         "joserfc>=1.0.4",
         "loguru>=0.7.3",
+        "orjson>=3.10.16",
         "pydantic-settings>=2.8.1",
         "pydantic[email]>=2.11.3",
         "pytest-loguru>=0.4.0",
         "spectree>=1.4.6",
-        "sqlalchemy",
+        "sqlalchemy>=2.0.40",
         "swagger-ui-bundle>=1.1.0",
-        "uvicorn[standard]",
-]
+        "typer>=0.15.3",
+        "uvicorn[standard]>=0.34.2",
+    ]
     description = "A lightweight, asynchronous RESTful e-commerce backend API."
     name = "e-commerce"
     readme = "README.md"
     requires-python = ">=3.12.9"
     version = "1.0.0"
 
+[project.scripts]
+    dev      = "manage:dev"
+    setup-db = "manage:setup"
+
 [dependency-groups]
     dev = [
-    "asgi-lifespan>=2.1.0",
-    "basedpyright",
-    "httpie>=3.2.4",
-    "httpx>=0.28.1",
-    "pytest>=8.3.5",
-    "pytest-asyncio>=0.26.0",
-    "ruff",
-    "vulture>=2.14",
+        "asgi-lifespan>=2.1.0",
+        "basedpyright",
+        "httpie>=3.2.4",
+        "httpx>=0.28.1",
+        "pytest-asyncio>=0.26.0",
+        "pytest>=8.3.5",
+        "ruff>=0.11.8",
+        "pytest-xdist>=3.6.1",
 ]
 
 [tool.uv.sources]
-falcon = { git = "https://github.com/falconry/falcon" }
+    falcon = { git = "https://github.com/falconry/falcon" }

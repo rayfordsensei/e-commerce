@@ -27,10 +27,10 @@ class LoginResource:
 
         Accepts username & password, returns a signed token valid for 4 hours.
         """
-        data = req.context.json  # pyright:ignore[reportAny]
+        data = req.context.json
 
         try:
-            token = await self._authenticate(data.username, data.password)  # pyright:ignore[reportAny]
+            token = await self._authenticate(data.username, data.password)
 
         except ValueError:
             resp.status = falcon.HTTP_401

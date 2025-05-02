@@ -34,7 +34,7 @@ async def create_user(username: str, email: str, password: str):
 
 
 def main():
-    if len(sys.argv) != 4:  # noqa: PLR2004  # magic is fun!
+    if len(sys.argv) != 4:  # magic is fun!
         print("Usage: seed_test_user.py <username> <email> <password>")
         sys.exit(1)
 

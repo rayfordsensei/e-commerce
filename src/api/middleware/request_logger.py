@@ -52,7 +52,7 @@ class RequestLoggerMiddleware:
         """Process the response right before returning it to the client."""
         _ = resource, req_succeeded
 
-        duration: float = time.time() - req.context.start_time  # pyright:ignore[reportAny]  # TODO: SimpleNamespace?
+        duration: float = time.time() - req.context.start_time  # TODO: SimpleNamespace?
         request_id = getattr(req.context, "request_id", "unknown")
         if not request_id:
             request_id = str(uuid.uuid4())
@@ -60,7 +60,7 @@ class RequestLoggerMiddleware:
 
         resp.set_header("X-Request-ID", request_id)
 
-        if isinstance(resp.media, dict):  # pyright:ignore[reportAny]
+        if isinstance(resp.media, dict):
             resp.media["request_id"] = request_id  # pyright:ignore[reportUnknownMemberType]
 
         logger.info("Response {}: {} | {} {} (Took {:.3f}s)", request_id, resp.status, req.method, req.path, duration)

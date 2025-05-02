@@ -10,7 +10,7 @@ async def generic_error_handler(  # noqa: RUF029
     req: falcon.Request,
     resp: falcon.Response | None,
     error: BaseException,
-    params: dict[str, Any],  # pyright:ignore[reportExplicitAny]
+    params: dict[str, Any],
     *,
     ws: WebSocket | None = None,
 ) -> None:

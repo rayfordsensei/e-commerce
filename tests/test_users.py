@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 from httpx import AsyncClient
 
@@ -12,18 +10,16 @@ async def test_register_and_retrieve_user(async_client: AsyncClient, auth_token:
 
     # Create through API
     resp = await async_client.post("/users", json=payload, headers={"Authorization": f"Bearer {auth_token}"})
-    assert resp.status_code == 201  # noqa: PLR2004
-    user_id = resp.json()["id"]  # pyright:ignore[reportAny]
+    assert resp.status_code == 201
+    user_id = resp.json()["id"]
 
     # Verify through UoW
     async with UnitOfWork() as uow:
         assert uow.users is not None
-        user = await uow.users.get(user_id)  # pyright:ignore[reportAny]
+        user = await uow.users.get(user_id)
         assert user is not None
         assert user.username == "charlie"
         assert user.email == "charlie@example.com"
-
-    await asyncio.sleep(0)
 
 
 @pytest.mark.asyncio
@@ -33,14 +29,14 @@ async def test_delete_user_with_existing_orders_fails(async_client: AsyncClient,
         json={"username": "orderowner", "email": "oo@example.com", "password": "p@ssw0rd"},
         headers={"Authorization": f"Bearer {auth_token}"},
     )
-    user_id = resp_u.json()["id"]  # pyright:ignore[reportAny]
+    user_id = resp_u.json()["id"]
 
     resp_p = await async_client.post(
         "/products",
         json={"name": "item", "description": "x", "price": 5.0, "stock": 10},
         headers={"Authorization": f"Bearer {auth_token}"},
     )
-    product_id = resp_p.json()["id"]  # noqa: F841  # pyright:ignore[reportAny, reportUnusedVariable]
+    product_id = resp_p.json()["id"]  # noqa: F841  # pyright:ignore[reportUnusedVariable]
 
     _ = await async_client.post(
         "/orders",
@@ -49,22 +45,20 @@ async def test_delete_user_with_existing_orders_fails(async_client: AsyncClient,
     )
 
     resp_del = await async_client.delete(f"/users/{user_id}", headers={"Authorization": f"Bearer {auth_token}"})
-    assert resp_del.status_code == 409  # noqa: PLR2004
+    assert resp_del.status_code == 409
     assert "orders still exist" in resp_del.json()["error"]
 
     async with UnitOfWork() as uow:
         assert uow.users is not None
         assert uow.orders is not None
-        assert (await uow.users.get(user_id)) is not None  # pyright:ignore[reportAny]
-        assert len(await uow.orders.list_for_user(user_id)) == 1  # pyright:ignore[reportAny]
-
-    await asyncio.sleep(0)
+        assert (await uow.users.get(user_id)) is not None
+        assert len(await uow.orders.list_for_user(user_id)) == 1
 
 
 @pytest.mark.asyncio
 async def test_delete_missing_user_returns_404(async_client: AsyncClient, auth_token: str):
     resp = await async_client.delete("/users/9999", headers={"Authorization": f"Bearer {auth_token}"})
-    assert resp.status_code == 404  # noqa: PLR2004
+    assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
@@ -76,10 +70,10 @@ async def test_patch_user_updates_username_and_email(async_client: AsyncClient, 
     resp1 = await async_client.patch(
         f"/users/{user_id}", json={"username": new_username}, headers={"Authorization": f"Bearer {auth_token}"}
     )
-    assert resp1.status_code == 204  # noqa: PLR2004
+    assert resp1.status_code == 204
 
     get1 = await async_client.get(f"/users/{user_id}", headers={"Authorization": f"Bearer {auth_token}"})
-    body1 = get1.json()  # pyright:ignore[reportAny]
+    body1 = get1.json()
     assert body1["username"] == new_username
     assert body1["email"] == "patch@example.com"
 
@@ -87,10 +81,10 @@ async def test_patch_user_updates_username_and_email(async_client: AsyncClient, 
     resp2 = await async_client.patch(
         f"/users/{user_id}", json={"email": new_email}, headers={"Authorization": f"Bearer {auth_token}"}
     )
-    assert resp2.status_code == 204  # noqa: PLR2004
+    assert resp2.status_code == 204
 
     get2 = await async_client.get(f"/users/{user_id}", headers={"Authorization": f"Bearer {auth_token}"})
-    body2 = get2.json()  # pyright:ignore[reportAny]
+    body2 = get2.json()
     assert body2["username"] == new_username
     assert body2["email"] == new_email
 
@@ -101,11 +95,9 @@ async def test_patch_user_updates_username_and_email(async_client: AsyncClient, 
         json={"username": final_username, "email": final_email},
         headers={"Authorization": f"Bearer {auth_token}"},
     )
-    assert resp3.status_code == 204  # noqa: PLR2004
+    assert resp3.status_code == 204
 
     get3 = await async_client.get(f"/users/{user_id}", headers={"Authorization": f"Bearer {auth_token}"})
-    body3 = get3.json()  # pyright:ignore[reportAny]
+    body3 = get3.json()
     assert body3["username"] == final_username
     assert body3["email"] == final_email
-
-    await asyncio.sleep(0)

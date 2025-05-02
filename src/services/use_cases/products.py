@@ -38,8 +38,33 @@ class CreateProduct:
 
 @final
 class ListProducts(BaseUseCase[AbstractProductRepository]):
-    async def __call__(self) -> list[Product]:
-        return list(await self._repo.list_all())
+    async def __call__(
+        self,
+        page: int = 1,
+        per_page: int = 20,
+        name_contains: str | None = None,
+        min_price: float | None = None,
+        max_price: float | None = None,
+    ) -> tuple[list[Product], int]:
+        offset = (page - 1) * per_page
+
+        items = list(
+            await self._repo.list_all(
+                offset=offset,
+                limit=per_page,
+                name_contains=name_contains,
+                min_price=min_price,
+                max_price=max_price,
+            )
+        )
+
+        total = await self._repo.count_all(
+            name_contains=name_contains,
+            min_price=min_price,
+            max_price=max_price,
+        )
+
+        return items, total
 
 
 @final

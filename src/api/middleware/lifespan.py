@@ -38,9 +38,9 @@ LifespanSendMessage = (
 )
 
 # lifespan only?..
-ASGIScope = dict[str, Any]  # pyright:ignore[reportExplicitAny]  # broad scope to avoid errors in falcon.asgi.App
-ASGIReceive = Callable[[], Awaitable[dict[str, Any]]]  # pyright:ignore[reportExplicitAny]
-ASGISend = Callable[[dict[str, Any]], Awaitable[None]]  # pyright:ignore[reportExplicitAny]
+ASGIScope = dict[str, Any]  # broad scope to avoid errors in falcon.asgi.App
+ASGIReceive = Callable[[], Awaitable[dict[str, Any]]]
+ASGISend = Callable[[dict[str, Any]], Awaitable[None]]
 
 
 @final

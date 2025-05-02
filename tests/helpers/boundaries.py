@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from functools import cache
 from typing import Any, NamedTuple
 from uuid import uuid4
 
@@ -26,7 +27,7 @@ _seen_product_names: set[str] = set()
 _seen_usernames: set[str] = set()
 
 
-def dedup_for_success(url: str, payload: dict[str, Any]) -> dict[str, Any]:  # pyright:ignore[reportExplicitAny]
+def dedup_for_success(url: str, payload: dict[str, Any]) -> dict[str, Any]:
     p = payload.copy()
 
     if url == "/products":
@@ -45,7 +46,7 @@ def dedup_for_success(url: str, payload: dict[str, Any]) -> dict[str, Any]:  # p
     return p
 
 
-def dedup_payload(url: str, payload: dict[str, Any]) -> dict[str, Any]:  # pyright:ignore[reportExplicitAny]
+def dedup_payload(url: str, payload: dict[str, Any]) -> dict[str, Any]:
     p = payload.copy()
     suffix = uuid4().hex[:6]
 
@@ -53,7 +54,7 @@ def dedup_payload(url: str, payload: dict[str, Any]) -> dict[str, Any]:  # pyrig
         p["name"] = f"{p.get('name', 'item')}-{suffix}"
 
     elif url == "/users":
-        base = p.get("username", "user")  # pyright:ignore[reportAny]
+        base = p.get("username", "user")
 
         p["username"] = f"{base}-{suffix}"
         p["email"] = f"{p['username']}@example.com"
@@ -61,25 +62,29 @@ def dedup_payload(url: str, payload: dict[str, Any]) -> dict[str, Any]:  # pyrig
 
 
 class Case(NamedTuple):
-    payload: dict[str, Any]  # pyright:ignore[reportExplicitAny]
+    payload: dict[str, Any]
     expected_status: str | int
     note: str
 
 
-def boundary_matrix(model_cls: type[BaseModel], happy: dict[str, Any]) -> Sequence[Case]:  # pyright:ignore[reportExplicitAny]
+@cache
+def _get_validation_schema(model_cls: type[BaseModel]) -> dict[str, Any]:
+    return model_cls.model_json_schema(mode="validation")
+
+
+def boundary_matrix(model_cls: type[BaseModel], happy: dict[str, Any]) -> Sequence[Case]:
     """Build boundary-value test cases by inspecting the JSON Schema that Pydantic v2 generates for the model."""  # noqa: DOC201
     cases: list[Case] = []
+    schema = _get_validation_schema(model_cls)
+    props = schema.get("properties", {})
 
-    schema = model_cls.model_json_schema(mode="validation")
-    props = schema.get("properties", {})  # pyright:ignore[reportAny]
-
-    for name, example in happy.items():  # pyright:ignore[reportAny]
-        prop_schema = props.get(name)  # pyright:ignore[reportAny]
+    for name, example in happy.items():
+        prop_schema = props.get(name)
         if not prop_schema:
             continue
 
         if "exclusiveMinimum" in prop_schema:
-            gt = prop_schema["exclusiveMinimum"]  # pyright:ignore[reportAny]
+            gt = prop_schema["exclusiveMinimum"]
             bad = {**happy, name: gt}
             cases.append(Case(bad, 400, f"{name} == gt({gt}) should fail"))
 
@@ -87,14 +92,14 @@ def boundary_matrix(model_cls: type[BaseModel], happy: dict[str, Any]) -> Sequen
             cases.append(Case({**happy, name: gt + delta}, "OK", f"{name} just above gt({gt}) passes"))
 
         if "minimum" in prop_schema:
-            ge = prop_schema["minimum"]  # pyright:ignore[reportAny]
+            ge = prop_schema["minimum"]
             cases.append(Case({**happy, name: ge}, "OK", f"{name} == ge({ge}) passes"))
 
             delta = 1 if isinstance(example, int) else 0.01
             cases.append(Case({**happy, name: ge - delta}, 400, f"{name} just below ge({ge}) should fail"))
 
         if "minLength" in prop_schema:
-            ml = prop_schema["minLength"]  # pyright:ignore[reportAny]
+            ml = prop_schema["minLength"]
 
             cases.append(Case({**happy, name: "x" * ml}, "OK", f"{name} at min_length({ml}) passes"))
             if ml > 0:

@@ -36,8 +36,27 @@ class RegisterUser:
 
 @final
 class ListUsers(BaseUseCase[AbstractUserRepository]):
-    async def __call__(self) -> list[User]:
-        return list(await self._repo.list_all())
+    async def __call__(
+        self,
+        page: int = 1,
+        per_page: int = 20,
+        username_contains: str | None = None,
+        email_contains: str | None = None,
+    ) -> tuple[list[User], int]:
+        offset = (page - 1) * per_page
+
+        items = list(
+            await self._repo.list_all(
+                offset=offset,
+                limit=per_page,
+                username_contains=username_contains,
+                email_contains=email_contains,
+            )
+        )
+
+        total = await self._repo.count_all(username_contains=username_contains, email_contains=email_contains)
+
+        return items, total
 
 
 @final

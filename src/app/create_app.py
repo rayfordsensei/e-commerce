@@ -9,16 +9,19 @@ so that DB startup/shutdown hooks fire automatically.
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 from typing import TypedDict, final
 
 import falcon.asgi
+import falcon.media
+import orjson
+from falcon import CORSMiddleware
 from swagger_ui_bundle import swagger_ui_path
 
 from api.middleware.error_handler import generic_error_handler
 from api.middleware.jwt import JWTMiddleware
 from api.middleware.lifespan import LifespanMiddleware
 from api.middleware.request_logger import RequestLoggerMiddleware
-from api.middleware.role import RoleMiddleware
 from api.routes.login_resource import LoginResource
 from api.routes.order_resources import OrderDetail, OrdersCollection
 from api.routes.product_resources import ProductResource
@@ -57,6 +60,14 @@ from services.use_cases.users import (
     RegisterUser,
     UpdateUserFields,
 )
+
+json_handler = falcon.media.JSONHandler(dumps=orjson.dumps, loads=orjson.loads)
+extra_handlers = {"application/json": json_handler}
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+STATIC_DIR = BASE_DIR / "static"
+BOOTSTRAP_CSS_DIR = BASE_DIR / "node_modules" / "bootstrap" / "dist" / "css"  # Shaving a few milliseconds to avoid FOUC
+BOOTSTRAP_JS_DIR = BASE_DIR / "node_modules" / "bootstrap" / "dist" / "js"  # why not as well?
 
 
 # Factory helpers
@@ -244,7 +255,7 @@ class CrashResource:  # Just blowing things up =)
 
 
 # ------------------------ 5. Public factory ----------------------------------
-def create_app(*, log_level: str = "INFO") -> LifespanMiddleware:
+def create_app() -> LifespanMiddleware:
     """Build and return an ASGI application wrapped in ``LifespanMiddleware``.
 
     The resulting callable is wrapped with :class:`api.middleware.lifespan.LifespanMiddleware`
@@ -263,8 +274,10 @@ def create_app(*, log_level: str = "INFO") -> LifespanMiddleware:
         ASGI server.
 
     """
+    log_level = "DEBUG" if settings.DEBUG else "INFO"
     setup_logging(log_level)
     sa_events.register_session_events()
+    cors = CORSMiddleware(allow_origins="*", expose_headers="*", allow_credentials="*")
 
     repos = _create_repositories()
     services = _create_services()
@@ -273,11 +286,14 @@ def create_app(*, log_level: str = "INFO") -> LifespanMiddleware:
 
     app = falcon.asgi.App(
         middleware=[
+            cors,
             RequestLoggerMiddleware(),
             JWTMiddleware(services["jwt"]),
-            # RoleMiddleware(),
         ]
     )
+
+    app.req_options.media_handlers.update(extra_handlers)  # pyright:ignore[reportUnknownMemberType]
+    app.resp_options.media_handlers.update(extra_handlers)  # pyright:ignore[reportUnknownMemberType]
 
     # Authentication
     app.add_route("/login", resources["login"])
@@ -300,6 +316,12 @@ def create_app(*, log_level: str = "INFO") -> LifespanMiddleware:
 
     # Auxiliary
     app.add_route("/__crash__", CrashResource())
+
+    if not settings.TESTING and STATIC_DIR.is_dir() and (STATIC_DIR / "index.html").is_file():
+        app.add_static_route("/static", str(STATIC_DIR))
+        app.add_static_route("/", str(STATIC_DIR), fallback_filename="index.html")
+        app.add_static_route("/static/css", str(BOOTSTRAP_CSS_DIR))
+        app.add_static_route("/static/js", str(BOOTSTRAP_JS_DIR))
 
     api.register(app)
 

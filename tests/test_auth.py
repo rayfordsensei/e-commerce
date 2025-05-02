@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import uuid
 from typing import Any
@@ -54,16 +53,14 @@ async def test_login_with_valid_creds(async_client: AsyncClient, create_user):  
     assert resp.json()["request_id"] == rid
     assert uuid.UUID(rid)
 
-    assert resp.status_code == 200  # noqa: PLR2004
-    token = resp.json()["token"]  # pyright:ignore[reportAny]
+    assert resp.status_code == 200
+    token = resp.json()["token"]
 
-    assert jwt_service.verify(token) == creds["id"]  # pyright:ignore[reportAny]
+    assert jwt_service.verify(token) == creds["id"]
 
     async with UnitOfWork() as uow:
         assert uow.users is not None
         assert (await uow.users.get(creds["id"])) is not None  # pyright:ignore[reportUnknownArgumentType]
-
-    await asyncio.sleep(0)
 
 
 @pytest.mark.asyncio
@@ -76,10 +73,8 @@ async def test_login_rejects_bad_password(async_client: AsyncClient, create_user
     assert resp.json()["request_id"] == rid
     assert uuid.UUID(rid)
 
-    assert resp.status_code == 401  # noqa: PLR2004
+    assert resp.status_code == 401
     assert resp.json()["error"] == "Invalid credentials"
-
-    await asyncio.sleep(0)
 
 
 @pytest.mark.asyncio
@@ -90,9 +85,9 @@ async def test_access_protected_endpoint_without_token(async_client: AsyncClient
     assert resp.json()["request_id"] == rid
     assert uuid.UUID(rid)
 
-    assert resp.status_code == 401  # noqa: PLR2004
+    assert resp.status_code == 401
 
-    response_data = resp.json()  # pyright:ignore[reportAny]
+    response_data = resp.json()
     assert "description" in response_data
     assert response_data["description"] == "Missing or invalid Authorization header"
 
@@ -107,9 +102,9 @@ async def test_access_protected_endpoint_with_invalid_token(async_client: AsyncC
     assert resp.json()["request_id"] == rid
     assert uuid.UUID(rid)
 
-    assert resp.status_code == 401  # noqa: PLR2004
+    assert resp.status_code == 401
 
-    response_data = resp.json()  # pyright:ignore[reportAny]
+    response_data = resp.json()
     assert "description" in response_data
     assert response_data["description"] == "Invalid token"
 
@@ -126,19 +121,19 @@ async def test_access_protected_endpoint_with_invalid_token(async_client: AsyncC
 async def test_protected_endpoint_rejects_bad_jwt(async_client: AsyncClient, token: str, expected_msg: str):
     resp = await async_client.get("/users", headers={"Authorization": f"Bearer {token}"})
 
-    assert resp.status_code == 401  # noqa: PLR2004
+    assert resp.status_code == 401
 
     rid = resp.headers["X-Request-ID"]
-    body = resp.json()  # pyright:ignore[reportAny]
+    body = resp.json()
     assert body["request_id"] == rid
     assert body["description"] == expected_msg
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("hdrs", MALFORMED_HEADERS)
-async def test_malformed_authorization_header(async_client: AsyncClient, hdrs: list[Any]):  # pyright:ignore[reportExplicitAny]
+async def test_malformed_authorization_header(async_client: AsyncClient, hdrs: list[Any]):
     resp = await async_client.get("/users", headers=hdrs)
 
-    assert resp.status_code == 401  # noqa: PLR2004
-    body = resp.json()  # pyright:ignore[reportAny]
+    assert resp.status_code == 401
+    body = resp.json()
     assert body["description"] == "Missing or invalid Authorization header"

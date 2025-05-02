@@ -51,7 +51,7 @@ class ProductOut(BaseModel):
     )
     price: float = Field(
         ...,
-        description="Unit price in EUR",
+        description="Unit price",
         examples=[29.99],
     )
     stock: int = Field(
@@ -61,11 +61,21 @@ class ProductOut(BaseModel):
     )
 
 
+class ProductFilter(BaseModel):
+    name_contains: str | None = Field(
+        None, description="Only return products with name containing this", examples=["mouse"]
+    )
+    min_price: float | None = Field(None, description="Products with minimum price", examples=[10])
+    max_price: float | None = Field(None, description="Products with maximum price", examples=[100])
+    page: int = Field(1, ge=1, description="Page number (1-based)", examples=[3])
+    per_page: int = Field(20, ge=1, le=100, description="Number of items per page", examples=[50])
+
+
 class ProductUpdate(BaseModel):
     price: float | None = Field(
         None,
         ge=0,
-        description="New unit price in EUR",
+        description="New unit price",
         examples=[24.99],
     )
     stock: int | None = Field(
@@ -89,4 +99,3 @@ class ProductError(BaseModel):
         examples=["Product not found"],
     )
     request_id: str | None = None
-    # Field(None, description="Request ID for tracing, if any", examples=["abcd1234-5678-90ef-ghij-1234567890kl"])

@@ -31,5 +31,16 @@ class AbstractUserRepository(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def list_all(self) -> list[User]:
+    async def list_all(
+        self,
+        *,
+        offset: int = 0,
+        limit: int | None = None,
+        username_contains: str | None = None,
+        email_contains: str | None = None,
+    ) -> list[User]:
+        pass
+
+    @abc.abstractmethod
+    async def count_all(self, *, username_contains: str | None = None, email_contains: str | None = None) -> int:
         pass

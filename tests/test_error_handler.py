@@ -8,12 +8,12 @@ from httpx import AsyncClient
 async def test_404_uses_generic_error_handler(async_client: AsyncClient) -> None:
     resp = await async_client.get("/this-does-not-exist")
 
-    assert resp.status_code == 404  # noqa: PLR2004
+    assert resp.status_code == 404
 
     rid = resp.headers["X-Request-ID"]
     assert resp.json()["request_id"] == rid
     assert uuid.UUID(rid)
 
-    body = resp.json()  # pyright:ignore[reportAny]
+    body = resp.json()
     assert body["error"] == "Not Found"
     assert body["request_id"] == rid

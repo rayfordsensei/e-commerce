@@ -18,15 +18,15 @@ def register_session_events() -> None:
 
 
 def register_engine_events(engine: AsyncEngine) -> None:
-    def _on_checkout(dbapi_conn: Any, conn_record: Any, conn_proxy: Any):  # pyright:ignore[reportAny, reportExplicitAny]  # noqa: ANN401
+    def _on_checkout(dbapi_conn: Any, conn_record: Any, conn_proxy: Any):  # noqa: ANN401
         _ = dbapi_conn, conn_proxy
 
-        conn_record.info["checked_out"] = "True"  # pyright:ignore[reportAny]
+        conn_record.info["checked_out"] = "True"
 
-    def _on_checkin(dbapi_conn: Any, conn_record: Any) -> None:  # noqa: ANN401  # pyright:ignore[reportAny, reportExplicitAny]
-        _ = dbapi_conn  # pyright:ignore[reportAny]
+    def _on_checkin(dbapi_conn: Any, conn_record: Any) -> None:  # noqa: ANN401
+        _ = dbapi_conn
 
-        conn_record.info.pop("checked_out", None)  # pyright:ignore[reportAny]
+        conn_record.info.pop("checked_out", None)
 
     sync_engine = engine.sync_engine
     event.listen(sync_engine, "checkout", _on_checkout)

@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 from domain.users.entities import User
@@ -16,14 +14,12 @@ async def test_uow_commits_changes():
         new_user = User(id=None, username="uow_user", email="uow@example.com", password_hash="x")  # noqa: S106
         created = await uow.users.add(new_user)
         assert created.id is not None
-    await asyncio.sleep(0)
 
     async with AsyncSessionLocal() as verify_sess:
         repo = SQLAlchemyUserRepository(session=verify_sess)
         fetched = await repo.get(created.id)
         assert fetched is not None
         assert fetched.username == "uow_user"
-    await asyncio.sleep(0)
 
 
 @pytest.mark.asyncio
@@ -39,4 +35,3 @@ async def test_uow_rolls_back_on_error():
         repo = SQLAlchemyUserRepository(session=verify_sess)
         none_user = await repo.get_by_username("will_fail")
         assert none_user is None
-    await asyncio.sleep(0)

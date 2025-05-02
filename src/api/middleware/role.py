@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import final
+from typing import TYPE_CHECKING, final
 
 import falcon
 from falcon import Request, Response
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 @final
@@ -20,7 +22,7 @@ class RoleMiddleware:
     If the method is not in the mapping the route is considered *public*.
     """
 
-    async def process_resource(
+    async def process_resource(  # noqa: PLR6301
         self,
         req: Request,
         resp: Response,  # unused but required
@@ -33,7 +35,7 @@ class RoleMiddleware:
         if not hasattr(resource, "required_roles"):
             return
 
-        required: dict[str, Iterable[str]] = resource.required_roles
+        required: dict[str, Iterable[str]] = resource.required_roles  # pyright:ignore[reportAttributeAccessIssue]
         allowed: set[str] = set(required.get(req.method, ()))
 
         # 2. No roles ⇒ open to everyone

@@ -20,7 +20,7 @@ class Order(Base):
 
     user: Mapped["User"] = relationship("User", back_populates="orders")
 
-    __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
+    __table_args__: tuple[Any, ...] | dict[str, Any] = (
         CheckConstraint("total_price >= 0", name="check_total_price_non_negative"),
     )
 
@@ -46,7 +46,7 @@ class User(Base):
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="user")
     products: Mapped[list["Product"]] = relationship("Product", back_populates="owner")
 
-    __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
+    __table_args__: tuple[Any, ...] | dict[str, Any] = (
         Index("ix_users_username", "username"),
         Index("ix_users_email", "email"),
     )
@@ -69,7 +69,7 @@ class Product(Base):
     owner_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     owner: Mapped["User"] = relationship("User", back_populates="products", lazy="joined")
 
-    __table_args__: tuple[Any, ...] | dict[str, Any] = (  # pyright:ignore[reportExplicitAny]
+    __table_args__: tuple[Any, ...] | dict[str, Any] = (
         CheckConstraint("price >= 0", name="check_price_non_negative"),
         CheckConstraint("stock >= 0", name="check_stock_non_negative"),
         Index("ux_products_name_lower", func.lower(name), unique=True),

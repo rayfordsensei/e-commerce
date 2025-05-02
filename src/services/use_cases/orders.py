@@ -31,10 +31,18 @@ class CreateOrder:
 
 @final
 class ListOrders(BaseUseCase[AbstractOrderRepository]):
-    async def __call__(self, user_id: int | None = None) -> list[Order]:
+    async def __call__(self, user_id: int | None = None, page: int = 1, per_page: int = 20) -> tuple[list[Order], int]:
+        offset = (page - 1) * per_page
+
         if user_id is None:
-            return list(await self._repo.list_all())
-        return list(await self._repo.list_for_user(user_id))
+            items = list(await self._repo.list_all(offset=offset, limit=per_page))
+            total = await self._repo.count_all()
+
+        else:
+            items = list(await self._repo.list_for_user(user_id, offset=offset, limit=per_page))
+            total = await self._repo.count_for_user(user_id)
+
+        return items, total
 
 
 @final

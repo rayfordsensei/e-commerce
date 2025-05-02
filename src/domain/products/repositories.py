@@ -32,5 +32,19 @@ class AbstractProductRepository(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def list_all(self) -> Sequence[Product]:
+    async def list_all(
+        self,
+        *,
+        offset: int = 0,
+        limit: int | None = None,
+        name_contains: str | None = None,
+        min_price: float | None = None,
+        max_price: float | None = None,
+    ) -> Sequence[Product]:
+        pass
+
+    @abc.abstractmethod
+    async def count_all(
+        self, *, name_contains: str | None = None, min_price: float | None = None, max_price: float | None = None
+    ) -> int:
         pass

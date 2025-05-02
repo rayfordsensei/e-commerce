@@ -48,10 +48,10 @@ class BaseSQLAlchemyRepo[Entity, Domain]:  # noqa: B903
         self._to_domain: Callable[[Entity], Domain] = to_domain
 
     @staticmethod
-    async def _maybe_await(value: Any) -> Any:  # pyright:ignore[reportAny, reportExplicitAny]  # noqa: ANN401
-        if isawaitable(value):  # pyright:ignore[reportAny]
-            return await value  # pyright:ignore[reportAny]
-        return value  # pyright:ignore[reportAny]
+    async def _maybe_await(value: Any) -> Any:  # noqa: ANN401
+        if isawaitable(value):
+            return await value
+        return value
 
     @asynccontextmanager
     async def _get_session(self):
@@ -63,7 +63,7 @@ class BaseSQLAlchemyRepo[Entity, Domain]:  # noqa: B903
         async with AsyncSessionLocal() as session:
             yield session
 
-    async def _save(self, orm: Entity, work: Callable[[AsyncSession, Entity], Any]) -> Domain:  # pyright:ignore[reportExplicitAny]
+    async def _save(self, orm: Entity, work: Callable[[AsyncSession, Entity], Any]) -> Domain:
         if self._session is not None:
             sess = self._session
             await self._maybe_await(work(sess, orm))
@@ -92,20 +92,20 @@ class BaseSQLAlchemyRepo[Entity, Domain]:  # noqa: B903
             await sess.refresh(orm)
             return self._to_domain(orm)
 
-    async def _exec(self, work: Callable[[AsyncSession], Any]):  # pyright:ignore[reportExplicitAny]
+    async def _exec(self, work: Callable[[AsyncSession], Any]):
         if self._session is not None:
             sess = self._session
-            result = await self._maybe_await(work(sess))  # pyright:ignore[reportAny]
+            result = await self._maybe_await(work(sess))
 
-            rowcount = getattr(result, "rowcount", None)  # pyright:ignore[reportAny]
+            rowcount = getattr(result, "rowcount", None)
             if rowcount is None or rowcount < 1:
                 raise falcon.HTTPNotFound(description="Resource not found")
             return
 
         async with AsyncSessionLocal() as sess:
-            result = await self._maybe_await(work(sess))  # pyright:ignore[reportAny]
+            result = await self._maybe_await(work(sess))
 
-            rowcount = getattr(result, "rowcount", None)  # pyright:ignore[reportAny]
+            rowcount = getattr(result, "rowcount", None)
             if rowcount is None or rowcount < 1:
                 raise falcon.HTTPNotFound(description="Resource not found")
 
@@ -114,7 +114,7 @@ class BaseSQLAlchemyRepo[Entity, Domain]:  # noqa: B903
 
     async def _fetch_one(
         self,
-        stmt: Select[Any],  # pyright:ignore[reportExplicitAny]
+        stmt: Select[Any],
         *,
         mapper: Callable[[Entity], Domain] | None = None,
     ) -> Scalar[Domain]:
@@ -126,20 +126,32 @@ class BaseSQLAlchemyRepo[Entity, Domain]:  # noqa: B903
 
     async def _fetch_many(
         self,
-        stmt: Select[Any],  # pyright:ignore[reportExplicitAny]
+        stmt: Select[Any],
         *,
         mapper: Callable[[Entity], Domain] | None = None,
     ) -> Many[Domain]:
         mapper = mapper or self._to_domain
         async with self._get_session() as s:
             res = await s.execute(stmt)
-            return [mapper(r) for r in res.scalars().all()]  # pyright:ignore[reportAny]
+            return [mapper(r) for r in res.scalars().all()]
 
 
 @final
 class SQLAlchemyOrderRepository(BaseSQLAlchemyRepo[OrderORM, Order], AbstractOrderRepository):
     def __init__(self, session: AsyncSession | None = None) -> None:
         super().__init__(session, to_domain=_order_to_domain)
+
+    @override
+    async def count_all(self) -> int:
+        async with AsyncSessionLocal() as s:
+            stmt = select(func.count()).select_from(OrderORM)
+            return (await s.execute(stmt)).scalar_one()
+
+    @override
+    async def count_for_user(self, user_id: int) -> int:
+        async with AsyncSessionLocal() as s:
+            stmt = select(func.count()).select_from(OrderORM).where(OrderORM.user_id == user_id)
+            return (await s.execute(stmt)).scalar_one()
 
     #  Write ops
     @override
@@ -161,28 +173,43 @@ class SQLAlchemyOrderRepository(BaseSQLAlchemyRepo[OrderORM, Order], AbstractOrd
     # Read ops
     @override
     async def get(self, order_id: int) -> Order | None:
-        async with self._get_session() as session:
-            res = await session.execute(select(OrderORM).where(OrderORM.id == order_id))
-            row = res.scalar_one_or_none()
-            return _order_to_domain(row) if row else None
+        stmt = select(OrderORM).where(OrderORM.id == order_id)
+        return await self._fetch_one(stmt)
 
     @override
-    async def list_for_user(self, user_id: int) -> Sequence[Order]:
-        async with self._get_session() as session:
-            res = await session.execute(select(OrderORM).where(OrderORM.user_id == user_id))
-            return [_order_to_domain(r) for r in res.scalars().all()]
+    async def list_for_user(self, user_id: int, *, offset: int = 0, limit: int | None = None) -> Sequence[Order]:
+        stmt = select(OrderORM).where(OrderORM.user_id == user_id).offset(offset)
+        if limit is not None:
+            stmt = stmt.limit(limit)
+
+        return await self._fetch_many(stmt)
 
     @override
-    async def list_all(self) -> Sequence[Order]:
-        async with self._get_session() as session:
-            res = await session.execute(select(OrderORM))
-            return [_order_to_domain(r) for r in res.scalars().all()]
+    async def list_all(self, *, offset: int = 0, limit: int | None = None) -> Sequence[Order]:
+        stmt = select(OrderORM).offset(offset)
+        if limit is not None:
+            stmt = stmt.limit(limit)
+
+        return await self._fetch_many(stmt)
 
 
 @final
 class SQLAlchemyUserRepository(BaseSQLAlchemyRepo[UserORM, User], AbstractUserRepository):
     def __init__(self, session: AsyncSession | None = None) -> None:
         super().__init__(session, to_domain=_user_to_domain)
+
+    @override
+    async def count_all(self, *, username_contains: str | None = None, email_contains: str | None = None) -> int:
+        stmt = select(func.count()).select_from(UserORM)
+
+        if username_contains:
+            stmt = stmt.where(UserORM.username.ilike(f"%{username_contains}%"))
+
+        if email_contains:
+            stmt = stmt.where(UserORM.email.ilike(f"%{email_contains}%"))
+
+        async with AsyncSessionLocal() as sess:
+            return (await sess.execute(stmt)).scalar_one()
 
     #  Write ops
     @override
@@ -214,39 +241,61 @@ class SQLAlchemyUserRepository(BaseSQLAlchemyRepo[UserORM, User], AbstractUserRe
     # Read ops
     @override
     async def get(self, user_id: int) -> User | None:
-        async with self._get_session() as session:
-            res = await session.execute(select(UserORM).where(UserORM.id == user_id))
-            row = res.scalar_one_or_none()
-
-            return _user_to_domain(row) if row else None
+        stmt = select(UserORM).where(UserORM.id == user_id)
+        return await self._fetch_one(stmt)
 
     @override
     async def get_by_username(self, username: str) -> User | None:
-        async with self._get_session() as session:
-            res = await session.execute(select(UserORM).where(UserORM.username == username))
-            row = res.scalar_one_or_none()
-
-            return _user_to_domain(row) if row else None
+        stmt = select(UserORM).where(UserORM.username == username)
+        return await self._fetch_one(stmt)
 
     @override
-    async def list_all(self) -> list[User]:
-        async with self._get_session() as session:
-            result = await session.execute(
-                select(
-                    UserORM.id,
-                    UserORM.username,
-                    UserORM.email,
-                )
-            )
-            rows = result.all()
+    async def list_all(
+        self,
+        *,
+        offset: int = 0,
+        limit: int | None = None,
+        username_contains: str | None = None,
+        email_contains: str | None = None,
+    ) -> list[User]:
+        stmt = select(UserORM).order_by(UserORM.id)
 
-            return [User(id=row.id, username=row.username, email=row.email, password_hash="") for row in rows]  # pyright:ignore[reportAny]
+        if username_contains:
+            stmt = stmt.where(UserORM.username.ilike(f"%{username_contains}%"))
+
+        if email_contains:
+            stmt = stmt.where(UserORM.email.ilike(f"%{email_contains}%"))
+
+        stmt = stmt.offset(offset)
+
+        if limit is not None:
+            stmt = stmt.limit(limit)
+
+        return await self._fetch_many(stmt)
 
 
 @final
 class SQLAlchemyProductRepository(BaseSQLAlchemyRepo[ProductORM, Product], AbstractProductRepository):
     def __init__(self, session: AsyncSession | None = None) -> None:
         super().__init__(session, to_domain=_product_to_domain)
+
+    @override
+    async def count_all(
+        self, *, name_contains: str | None = None, min_price: float | None = None, max_price: float | None = None
+    ) -> int:
+        stmt = select(func.count()).select_from(ProductORM)
+
+        if name_contains:
+            stmt = stmt.where(ProductORM.name.ilike(f"%{name_contains}%"))
+
+        if min_price is not None:
+            stmt = stmt.where(ProductORM.price >= min_price)
+
+        if max_price is not None:
+            stmt = stmt.where(ProductORM.price <= max_price)
+
+        async with AsyncSessionLocal() as sess:
+            return (await sess.execute(stmt)).scalar_one()
 
     # Write ops
     @override
@@ -287,22 +336,37 @@ class SQLAlchemyProductRepository(BaseSQLAlchemyRepo[ProductORM, Product], Abstr
     # Read ops
     @override
     async def get(self, product_id: int) -> Product | None:
-        async with self._get_session() as session:
-            res = await session.execute(select(ProductORM).where(ProductORM.id == product_id))
-            row = res.scalar_one_or_none()
-
-            return _product_to_domain(row) if row else None
+        stmt = select(ProductORM).where(ProductORM.id == product_id)
+        return await self._fetch_one(stmt)
 
     @override
     async def get_by_name(self, name: str) -> Product | None:
-        async with self._get_session() as session:
-            res = await session.execute(select(ProductORM).where(ProductORM.name == name))
-            row = res.scalar_one_or_none()
-
-            return _product_to_domain(row) if row else None
+        stmt = select(ProductORM).where(ProductORM.name == name)
+        return await self._fetch_one(stmt)
 
     @override
-    async def list_all(self) -> Sequence[Product]:
-        async with self._get_session() as session:
-            res = await session.execute(select(ProductORM))
-            return [_product_to_domain(r) for r in res.scalars().all()]
+    async def list_all(
+        self,
+        *,
+        offset: int = 0,
+        limit: int | None = None,
+        name_contains: str | None = None,
+        min_price: float | None = None,
+        max_price: float | None = None,
+    ) -> Sequence[Product]:
+        stmt = select(ProductORM)
+        if name_contains:
+            stmt = stmt.where(ProductORM.name.ilike(f"%{name_contains}%"))
+
+        if min_price is not None:
+            stmt = stmt.where(ProductORM.price >= min_price)
+
+        if max_price is not None:
+            stmt = stmt.where(ProductORM.price <= max_price)
+
+        stmt = stmt.order_by(func.lower(ProductORM.name))
+        stmt = stmt.offset(offset)
+        if limit is not None:
+            stmt = stmt.limit(limit)
+
+        return await self._fetch_many(stmt)

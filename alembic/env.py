@@ -2,8 +2,8 @@ from sqlalchemy import engine_from_config, pool
 
 import src.infrastructure.sqlalchemy.models  # noqa: F401  # pyright:ignore[reportUnusedImport]
 from alembic import context
-from src.app.logging_conf import setup_logging
 from src.app.settings import settings
+from src.common.logging import setup_logging
 from src.infrastructure.sqlalchemy.models import Base
 
 setup_logging("INFO")

@@ -1,4 +1,3 @@
-# pyright: basic
 import sys
 from pathlib import Path
 
@@ -7,26 +6,21 @@ SRC_DIR = BASE_DIR / "src"
 
 sys.path.insert(0, str(SRC_DIR))
 
-from app.app import app as application
+from app.app import app as application  # pyright:ignore[reportUnusedImport]
 
 # TODO: context_types?
-# TODO: pagination + filtering
 # TODO: HATEOAS?
 # TODO: SimpleNamespace for req (esp. in request_logger)?
 # TODO: Improve Swagger/ReDoc?
 # TODO: background tasks?
 # TODO: rate-limiting + abuse protection?
-# TODO: implement different logging conf for dev/prod
-# TODO: log request body for safe endpoints (logger.debug?)
-# TODO: differ between log levels (only "INFO" for now)
 # TODO: Check and fix "noqa" and "pyright:ignore"
 # TODO: custom exceptions instead of generic ones (ValueError("...")) inside domain/exceptions.py
 # TODO: shopping cart?..
-# TODO: switch json encoder to a faster lib (orjson?)
 # TODO: persistent db sessions / pooling?
-# TODO: cache hot rows? (`functools.lru_cache`? redis?)
-# TODO: simple frontend as a showcase
+# TODO: cache hot rows?
 # TODO: intermediate tables?
-# tox -q r -e py312 <- for tests
+# tox -q r -e py312 <- for test
 # TODO: get rid of `assert`
 # TODO: make cleaner engine_args
+# TODO: nginx instead of py for static files?

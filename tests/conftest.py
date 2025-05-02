@@ -88,9 +88,9 @@ async def create_user():  # noqa: ANN201, RUF029
 
 
 @pytest_asyncio.fixture
-async def auth_token(async_client: AsyncClient, create_user):  # noqa: ANN001, ANN201  # pyright:ignore[reportAny, reportUnknownParameterType, reportMissingParameterType]
+async def auth_token(async_client: AsyncClient, create_user):  # noqa: ANN001, ANN201  # pyright:ignore[reportUnknownParameterType, reportMissingParameterType]
     """JWT for the default test-user (register -> login)."""  # noqa: DOC201
     creds = await create_user()  # pyright:ignore[reportUnknownVariableType]
     resp = await async_client.post("/login", json={"username": creds["username"], "password": creds["password"]})  # pyright:ignore[reportUnknownArgumentType]
 
-    return resp.json()["token"]  # pyright:ignore[reportAny]
+    return resp.json()["token"]

@@ -24,9 +24,22 @@ class AbstractOrderRepository(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def list_for_user(self, user_id: int) -> Sequence[Order]:
+    async def list_for_user(self, user_id: int, *, offset: int = 0, limit: int | None = None) -> Sequence[Order]:
         pass
 
     @abc.abstractmethod
-    async def list_all(self) -> Sequence[Order]:
+    async def list_all(
+        self,
+        *,
+        offset: int = 0,
+        limit: int | None = None,
+    ) -> Sequence[Order]:
+        pass
+
+    @abc.abstractmethod
+    async def count_all(self) -> int:
+        pass
+
+    @abc.abstractmethod
+    async def count_for_user(self, user_id: int) -> int:
         pass

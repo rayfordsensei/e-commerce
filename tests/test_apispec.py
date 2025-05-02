@@ -22,14 +22,14 @@ EXPECTED = {
 @pytest.mark.asyncio
 async def test_spec_includes_all_expected_statuses(async_client: AsyncClient):
     resp = await async_client.get("/apidoc/openapi.json")
-    assert resp.status_code == 200  # noqa: PLR2004
-    spec = resp.json()  # pyright:ignore[reportAny]
+    assert resp.status_code == 200
+    spec = resp.json()
 
     for (path, method), expected_codes in EXPECTED.items():
-        operation = spec["paths"][path].get(method)  # pyright:ignore[reportAny]
+        operation = spec["paths"][path].get(method)
         assert operation is not None, f"Spec missing operation {method.upper()} {path}"
 
-        actual_codes = set(operation["responses"].keys())  # pyright:ignore[reportAny]
+        actual_codes = set(operation["responses"].keys())
         assert actual_codes == expected_codes, (
             f"{method.upper()} {path}: spec has {sorted(actual_codes)}, but expected {sorted(expected_codes)}"
         )

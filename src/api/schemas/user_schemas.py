@@ -44,6 +44,17 @@ class UserOut(BaseModel):
     )
 
 
+class UserFilter(BaseModel):
+    username_contains: str | None = Field(
+        None, description="Only return users with username containing this", examples=["th"]
+    )
+    email_contains: str | None = Field(
+        None, description="Only return users with email containing this", examples=[".com"]
+    )
+    page: int = Field(1, ge=1, description="Page number (1-based)", examples=[3])
+    per_page: int = Field(20, ge=1, le=100, description="Number of items per page", examples=[50])
+
+
 class UserUpdate(BaseModel):
     username: str | None = Field(
         None,
@@ -72,4 +83,3 @@ class UserError(BaseModel):
         examples=["User not found"],
     )
     request_id: str | None = None
-    # Field(None, description="Request ID for tracing, if any", examples=["abcd1234-5678-90ef-ghij-1234567890kl"])
