@@ -3,7 +3,7 @@
 ######################## Stage 0 – JS deps ########################
 FROM node:20-alpine AS jsdeps
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 RUN corepack enable   && \
     pnpm install --prod --frozen-lockfile  # only bootstrap
 
@@ -26,7 +26,7 @@ ENV UV_SYSTEM=true \
 # 4. Copy lock‑files first, resolve & cache dependencies
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
-RUN uv sync --locked  # will fail if lock is stale
+RUN uv sync --locked
 ENV PATH="/app/.venv/bin:$PATH"
 
 # 5. Copy project source last

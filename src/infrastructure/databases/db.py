@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from sqlalchemy import StaticPool, select
+from sqlalchemy import StaticPool, inspect, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from alembic import command
@@ -28,7 +28,7 @@ engine = create_async_engine(SQLITE_URI, **engine_args)
 AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 sa_events.register_engine_events(engine)
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parents[3]
 _ALEMBIC_INI = BASE_DIR / "alembic.ini"
 
 
@@ -72,6 +72,10 @@ async def init_db(seed: bool = False):  # noqa: FBT001, FBT002  # Why not?
         return
 
     await _apply_migrations()
+
+    async with engine.begin() as conn:
+        if "users" not in await conn.run_sync(lambda c: inspect(c).get_table_names()):
+            raise RuntimeError("Required tables missing after migrations!")  # noqa: EM101, TRY003
 
     if seed:
         await _ensure_demo_user()

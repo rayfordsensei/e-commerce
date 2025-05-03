@@ -1,8 +1,8 @@
-"""Initial migration
+"""initial schema
 
-Revision ID: 6fe1a48eff33
+Revision ID: c4e282976b91
 Revises: 
-Create Date: 2025-04-30 14:07:39.991870
+Create Date: 2025-05-03 15:41:57.770949
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6fe1a48eff33'
+revision: str = 'c4e282976b91'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -51,7 +51,12 @@ def upgrade() -> None:
     sa.CheckConstraint('stock >= 0', name='check_stock_non_negative'),
     sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
+    
     )
+
+    op.execute(
+    "CREATE UNIQUE INDEX ux_products_name_lower ON products (lower(name));"
+)
     # ### end Alembic commands ###
 
 
