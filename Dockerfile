@@ -5,7 +5,10 @@ FROM node:20-alpine AS jsdeps
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 RUN corepack enable   && \
-    pnpm install --prod --frozen-lockfile  # only bootstrap
+    pnpm install --prod --frozen-lockfile \
+    && mkdir -p /assets/css /assets/js \
+    && cp node_modules/bootstrap/dist/css/bootstrap.min.css /assets/css/ \
+    && cp node_modules/bootstrap/dist/js/bootstrap.bundle.min.js /assets/js/
 
 ######################## Stage 1 – build ########################
 FROM python:3.12-slim AS builder
@@ -17,34 +20,36 @@ RUN apt-get update && \
 
 # 2. Copy static uv binary from Astral’s distroless layer
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-COPY --from=jsdeps /app/node_modules /app/node_modules
 
-# 3. Enable non‑interactive uv & nicer logs
-ENV UV_SYSTEM=true \
-    PYTHONUNBUFFERED=1
-
-# 4. Copy lock‑files first, resolve & cache dependencies
+# 3. Copy lock‑files first, resolve & cache dependencies
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
-RUN uv sync --locked
-ENV PATH="/app/.venv/bin:$PATH"
+ENV UV_PROJECT_ENVIRONMENT=/usr/local
+RUN uv sync --locked \
+    && rm -rf /root/.cache/pip
 
-# 5. Copy project source last
+# 4. Copy project source last
 COPY . .
 
 ######################## Stage 2 – runtime ######################
 FROM python:3.12-slim
 
-# 6. Copy uv + site‑packages from the builder
+# 5. Copy uv + site‑packages from the builder
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
 WORKDIR /app
 
-# 7. Provide default envs – all can be overridden at run‑time
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV UV_PROJECT_ENVIRONMENT=/usr/local
+ENV UV_SYSTEM_PYTHON=1
+
+# 6. Provide default envs – all can be overridden at run‑time
 COPY .env.example .env
-ENV DEBUG=false \
-    UV_SYSTEM=true \
-    PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1
+# ENV DEBUG=false  # doesn't seed user otherwise.
 
 EXPOSE 8000
-CMD ["uv", "run", "src/manage.py", "dev", "--host", "0.0.0.0"]
+CMD ["uv", "run", "--no-sync", "src/manage.py", "dev", "--host", "0.0.0.0"]
