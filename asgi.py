@@ -20,7 +20,6 @@ from app.app import app as application  # pyright:ignore[reportUnusedImport]
 # TODO: persistent db sessions / pooling?
 # TODO: cache hot rows?
 # TODO: intermediate tables?
-# tox -q r -e py312 <- for test
 # TODO: get rid of `assert`
 # TODO: make cleaner engine_args
 # TODO: nginx instead of py for static files?
