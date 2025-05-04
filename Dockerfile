@@ -8,7 +8,9 @@ RUN corepack enable   && \
     pnpm install --prod --frozen-lockfile \
     && mkdir -p /assets/css /assets/js \
     && cp node_modules/bootstrap/dist/css/bootstrap.min.css /assets/css/ \
-    && cp node_modules/bootstrap/dist/js/bootstrap.bundle.min.js /assets/js/
+    && cp node_modules/bootstrap/dist/css/bootstrap.min.css.map /assets/css/ \
+    && cp node_modules/bootstrap/dist/js/bootstrap.bundle.min.js /assets/js/ \
+    && cp node_modules/bootstrap/dist/js/bootstrap.bundle.min.js.map /assets/js/
 
 ######################## Stage 1 – build ########################
 FROM python:3.12-slim AS builder
@@ -50,6 +52,9 @@ ENV UV_SYSTEM_PYTHON=1
 COPY .env.example .env
 ENV PYTHONUNBUFFERED=1
 # ENV DEBUG=false  # doesn't seed user otherwise.
+
+RUN mkdir -p /app/node_modules/bootstrap/dist
+COPY --from=jsdeps /app/node_modules/bootstrap/dist /app/node_modules/bootstrap/dist
 
 EXPOSE 8000
 CMD ["uv", "run", "--no-sync", "src/manage.py", "dev", "--host", "0.0.0.0"]
