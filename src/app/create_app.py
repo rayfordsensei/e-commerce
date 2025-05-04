@@ -277,7 +277,9 @@ def create_app() -> LifespanMiddleware:
     log_level = "DEBUG" if settings.DEBUG else "INFO"
     setup_logging(log_level)
     sa_events.register_session_events()
-    cors = CORSMiddleware(allow_origins="*", expose_headers="*", allow_credentials="*")
+    cors = CORSMiddleware(
+        allow_origins=["https://rayfordsensei.github.io/e-commerce"], expose_headers="*", allow_credentials="*"
+    )
 
     repos = _create_repositories()
     services = _create_services()

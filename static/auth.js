@@ -48,10 +48,12 @@ export async function apiFetch(path, opts = {}) {
 	if (jwtToken) headers.set('Authorization', `Bearer ${jwtToken}`);
 	headers.set('Content-Type', 'application/json');
 
-	const res = await fetch(path, {
+	const url = `${window.API_BASE}${path}`
+	const res = await fetch(url, {
 		...opts,
 		headers,
 		credentials: 'include', // if you ever do cookies later
+		mode: 'cors',
 	});
 
 	if (res.status === 401) {
