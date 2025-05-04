@@ -22,7 +22,12 @@ class JWTMiddleware:
         _ = resp, resource, params
 
         route_method = (req.path, req.method.upper())
-        if route_method in self._public_endpoints or req.path.startswith("/apidoc") or req.path == "/favicon.ico":
+        if (
+            route_method in self._public_endpoints
+            or req.path.startswith("/apidoc")
+            or req.path == "/favicon.ico"
+            or req.method.upper() == "OPTIONS"
+        ):
             return
 
         auth_header = req.get_header("Authorization")

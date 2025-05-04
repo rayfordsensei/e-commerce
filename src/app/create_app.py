@@ -278,7 +278,7 @@ def create_app() -> LifespanMiddleware:
     setup_logging(log_level)
     sa_events.register_session_events()
     cors = CORSMiddleware(
-        allow_origins=["https://rayfordsensei.github.io/e-commerce"], expose_headers="*", allow_credentials="*"
+        allow_origins=["https://rayfordsensei.github.io"], expose_headers="*", allow_credentials="*"
     )
 
     repos = _create_repositories()
